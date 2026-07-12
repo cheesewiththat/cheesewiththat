@@ -36,3 +36,13 @@ yarn-error.log*
 .pnpm-debug.log*
 .DS_Store
 *.pem
+.next/
+node_modules/
+out/
+coverage/
+.env
+.env.local
+.env.*.local
+!.env.example
+.DS_Store
+npm-debug.log*
