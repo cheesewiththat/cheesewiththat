@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import formsPlugin from "@tailwindcss/forms";
 
 export default {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
@@ -25,5 +26,5 @@ export default {
       maxWidth: { page: "90rem" },
     },
   },
-  plugins: [require("@tailwindcss/forms")],
+  plugins: [formsPlugin],
 } satisfies Config;
