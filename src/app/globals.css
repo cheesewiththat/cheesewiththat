@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bone: #f3eee5;
+  --ink: #111;
+  --charcoal: #242424;
+  --warm-white: #fcfaf6;
+  --brass: #c3a46b;
+  --cobalt: #315cff;
+  --vermilion: #ff5a36;
+  --chartreuse: #c7f43d;
+  --plum: #653c78;
+  --teal: #087f78;
+  --racing-red: #e10600;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: "Space Grotesk", "Avenir Next", Arial, sans-serif;
+}
+a {
+  text-underline-offset: 0.22em;
+}
+::selection {
+  background: var(--chartreuse);
+  color: var(--ink);
+}
+:focus-visible {
+  outline: 3px solid var(--cobalt);
+  outline-offset: 3px;
+}
+.site-header[data-theme="dark"] :focus-visible {
+  outline-color: var(--chartreuse);
+}
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  background: var(--ink);
+  color: white;
+  padding: 0.75rem 1rem;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+.editorial-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.display {
+  font-family: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+}
+.card {
+  border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-radius: 1rem;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.8rem;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 650;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+.button:hover {
+  transform: translateY(-2px);
+}
+.cheese-note {
+  display: none;
+}
+html[data-cheese="on"] .cheese-note {
+  display: block;
+  animation: note-in 0.3s ease both;
+}
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: rotate(-1deg) translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

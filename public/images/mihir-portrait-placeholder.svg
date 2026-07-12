@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" role="img" aria-labelledby="title description">
+  <title id="title">Portrait placeholder for Mihir</title>
+  <desc id="description">An understated editorial placeholder in warm neutral colours.</desc>
+  <rect width="720" height="960" fill="#E7DED0"/>
+  <rect x="36" y="36" width="648" height="888" rx="4" fill="#F3EEE5" stroke="#C3A46B" stroke-width="2"/>
+  <circle cx="360" cy="350" r="134" fill="#CFC3B2"/>
+  <path d="M165 805c16-174 86-278 195-278s179 104 195 278" fill="#242424"/>
+  <path d="M132 118h124" stroke="#FF5A36" stroke-width="8"/>
+  <text x="132" y="164" fill="#111111" font-family="monospace" font-size="20" letter-spacing="3">PORTRAIT TO FOLLOW</text>
+  <text x="360" y="876" fill="#111111" font-family="serif" font-size="34" text-anchor="middle">Mihir—with context.</text>
+</svg>
