@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { submitPublicForm } from "@/lib/forms/client";
+import { runWithSubmissionLock } from "@/lib/forms/submission-lock";
 import { enquirySuccessMessage } from "@/lib/workflows";
 
 const labels: Record<string, string> = {
@@ -11,6 +12,17 @@ const labels: Record<string, string> = {
   product: "Print product",
   preferredSize: "Preferred size",
 };
+
+export const enquiryFailureMessage =
+  "We couldn’t send your details just now. Your information is still here, so you can try again.";
+
+export function EnquiryFailureNotice({ message }: { message: string }) {
+  return (
+    <div role="alert" className="mt-5 rounded-lg border border-racing p-4">
+      <p>{message || enquiryFailureMessage}</p>
+    </div>
+  );
+}
 
 export function EnquiryForm({
   kind = "general",
@@ -35,6 +47,7 @@ export function EnquiryForm({
     () => `enquiry_${crypto.randomUUID().replaceAll("-", "")}`,
   );
   const statusRef = useRef<HTMLDivElement>(null);
+  const submissionLock = useRef(false);
 
   function update(field: keyof typeof values, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -49,24 +62,26 @@ export function EnquiryForm({
 
   async function send() {
     if (status === "submitting" || status === "sent") return;
-    setStatus("submitting");
-    setMessage("");
-    const result = await submitPublicForm({
-      formType: kind,
-      values: { ...values, ...context },
-      sourcePage: window.location.pathname,
-      startedAt,
-      clientSubmissionKey,
-    });
-    if (result.ok) {
-      setStatus("sent");
-      setSubmissionId(result.submissionId);
+    await runWithSubmissionLock(submissionLock, async () => {
+      setStatus("submitting");
+      setMessage("");
+      const result = await submitPublicForm({
+        formType: kind,
+        values: { ...values, ...context },
+        sourcePage: window.location.pathname,
+        startedAt,
+        clientSubmissionKey,
+      });
+      if (result.ok) {
+        setStatus("sent");
+        setSubmissionId(result.submissionId);
+        window.requestAnimationFrame(() => statusRef.current?.focus());
+        return;
+      }
+      setStatus("failed");
+      setMessage(result.message);
       window.requestAnimationFrame(() => statusRef.current?.focus());
-      return;
-    }
-    setStatus("failed");
-    setMessage(result.message);
-    window.requestAnimationFrame(() => statusRef.current?.focus());
+    });
   }
 
   if (status === "sent")
@@ -103,17 +118,7 @@ export function EnquiryForm({
               </div>
             ))}
         </dl>
-        {status === "failed" && (
-          <div
-            role="alert"
-            className="mt-5 rounded-lg border border-racing p-4"
-          >
-            <p>{message}</p>
-            <p className="mt-2 text-sm">
-              Your information is still here, so you can try again.
-            </p>
-          </div>
-        )}
+        {status === "failed" && <EnquiryFailureNotice message={message} />}
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"

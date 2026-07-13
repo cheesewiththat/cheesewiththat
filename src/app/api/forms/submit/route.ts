@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkFormRateLimit } from "@/lib/forms/rate-limit";
+import { logEmailDeliveryFailure } from "@/lib/forms/diagnostics";
+import { createSubmissionId } from "@/lib/forms/email";
 import { deliverFormSubmission } from "@/lib/forms/service";
 import { validateSubmissionPayload } from "@/lib/forms/validation";
 
@@ -82,10 +84,19 @@ export async function POST(request: Request) {
         headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
       },
     );
+  const submissionId = createSubmissionId();
   try {
-    const submissionId = await deliverFormSubmission(validation.submission);
-    return NextResponse.json({ ok: true, submissionId });
-  } catch {
+    const deliveredSubmissionId = await deliverFormSubmission(
+      validation.submission,
+      { submissionId },
+    );
+    return NextResponse.json({ ok: true, submissionId: deliveredSubmissionId });
+  } catch (error) {
+    logEmailDeliveryFailure({
+      submissionId,
+      formType: validation.submission.formType,
+      error,
+    });
     return NextResponse.json(
       {
         ok: false,

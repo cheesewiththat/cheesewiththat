@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { POST } from "@/app/api/forms/submit/route";
 import { intakeSchemas, type EngagementKind } from "@/lib/intake";
 import { submitPublicForm } from "./client";
@@ -6,11 +6,18 @@ import {
   buildNotificationEmail,
   escapeHtml,
   getEmailConfiguration,
+  getSesClientConfiguration,
   type EmailMessage,
   type EmailProvider,
 } from "./email";
+import {
+  EmailConfigurationError,
+  classifyEmailFailure,
+  logEmailDeliveryFailure,
+} from "./diagnostics";
 import { resetFormRateLimits } from "./rate-limit";
 import { deliverFormSubmission, resetSubmissionDeduplication } from "./service";
+import { runWithSubmissionLock } from "./submission-lock";
 import { formTypes, type FormSubmissionRequest, type FormType } from "./types";
 import { validateSubmissionPayload } from "./validation";
 
@@ -170,7 +177,7 @@ describe("SES notification construction", () => {
   const configuration = {
     from: "mihir@cheesewiththat.com",
     to: "mihirsatokar@gmail.com",
-    region: "ap-southeast-2",
+    region: "ap-south-1",
   };
   it("uses only server sender/recipient and validated visitor reply-to", () => {
     const message = buildNotificationEmail(
@@ -202,6 +209,23 @@ describe("SES notification construction", () => {
       }),
     ).toThrow("Email delivery is not configured");
   });
+  it("rejects a wrong SES region rather than silently falling back", () => {
+    expect(() =>
+      getEmailConfiguration({
+        FORM_NOTIFICATION_TO_EMAIL: configuration.to,
+        FORM_NOTIFICATION_FROM_EMAIL: configuration.from,
+        SES_REGION: "ap-southeast-2",
+      }),
+    ).toThrow("does not match the verified SES identity region");
+  });
+  it("passes only the configured region to the SES client", () => {
+    expect(getSesClientConfiguration("ap-south-1")).toEqual({
+      region: "ap-south-1",
+    });
+    expect(getSesClientConfiguration("ap-south-1")).not.toHaveProperty(
+      "credentials",
+    );
+  });
   it("escapes HTML and includes HTML, text and submitted enquiry fields", () => {
     const dangerous = submission("consulting", {
       values: {
@@ -226,7 +250,7 @@ describe("delivery, deduplication and safe responses", () => {
   const configuration = {
     from: "mihir@cheesewiththat.com",
     to: "mihirsatokar@gmail.com",
-    region: "ap-southeast-2",
+    region: "ap-south-1",
   };
   it("returns a unique submission ID only after provider success", async () => {
     const provider = new RecordingProvider();
@@ -247,7 +271,24 @@ describe("delivery, deduplication and safe responses", () => {
     expect(first).toBe(second);
     expect(provider.messages).toHaveLength(1);
   });
+  it("prevents concurrent client retry submissions and releases the lock", async () => {
+    const lock = { current: false };
+    let resolve!: (value: string) => void;
+    const pending = new Promise<string>((done) => {
+      resolve = done;
+    });
+    const submit = vi.fn(() => pending);
+
+    const first = runWithSubmissionLock(lock, submit);
+    const second = runWithSubmissionLock(lock, submit);
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(await second).toBeUndefined();
+    resolve("sent");
+    expect(await first).toBe("sent");
+    expect(lock.current).toBe(false);
+  });
   it("returns a safe endpoint error when SES/configuration fails", async () => {
+    const logger = vi.spyOn(console, "error").mockImplementation(() => {});
     const request = new Request("http://localhost/api/forms/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -267,6 +308,8 @@ describe("delivery, deduplication and safe responses", () => {
         "We couldn’t send your details just now. Your information is still here, so you can try again.",
     });
     expect(JSON.stringify(result)).not.toContain("AWS");
+    expect(logger).toHaveBeenCalledOnce();
+    logger.mockRestore();
   });
   it("preserves an enquiry submission object on delivery failure", async () => {
     const failure = {
@@ -280,7 +323,83 @@ describe("delivery, deduplication and safe responses", () => {
         status: 503,
         headers: { "Content-Type": "application/json" },
       });
-    await submitPublicForm(original, fetcher as typeof fetch);
+    const result = await submitPublicForm(original, fetcher as typeof fetch);
+    expect(result).toEqual(failure);
     expect(original.values).toEqual(valuesFor("consulting"));
+  });
+});
+
+describe("safe email failure diagnostics", () => {
+  it.each([
+    [new EmailConfigurationError("missing"), "missing-configuration"],
+    [
+      Object.assign(new Error("credentials"), {
+        name: "CredentialsProviderError",
+      }),
+      "credentials-unavailable",
+    ],
+    [
+      Object.assign(new Error("denied"), { name: "AccessDeniedException" }),
+      "access-denied",
+    ],
+    [
+      Object.assign(new Error("Email identity is not verified"), {
+        name: "MessageRejected",
+      }),
+      "identity-not-verified",
+    ],
+    [
+      Object.assign(
+        new Error("Credential should be scoped to a valid region"),
+        {
+          name: "InvalidSignatureException",
+        },
+      ),
+      "region-mismatch",
+    ],
+    [
+      Object.assign(new Error("late"), { name: "TimeoutError" }),
+      "provider-timeout",
+    ],
+    [
+      Object.assign(new Error("rejected"), { name: "MessageRejected" }),
+      "message-rejected",
+    ],
+    [new Error("provider"), "provider-error"],
+  ] as const)("classifies provider failure as %s", (error, classification) => {
+    expect(classifyEmailFailure(error)).toBe(classification);
+  });
+
+  it("logs only allow-listed diagnostic metadata", () => {
+    const logger = vi.fn();
+    logEmailDeliveryFailure(
+      {
+        submissionId: "safe-id",
+        formType: "consulting",
+        timestamp: new Date("2026-07-13T00:00:00Z"),
+        environment: {
+          SES_REGION: "ap-south-1",
+          FORM_NOTIFICATION_FROM_EMAIL: "sender@example.com",
+          FORM_NOTIFICATION_TO_EMAIL: "recipient@example.com",
+        },
+        error: Object.assign(new Error("secret provider details"), {
+          name: "AccessDeniedException",
+          stack: "sensitive stack",
+        }),
+      },
+      logger,
+    );
+    expect(logger).toHaveBeenCalledWith("Form email delivery failed", {
+      submissionId: "safe-id",
+      formType: "consulting",
+      timestamp: "2026-07-13T00:00:00.000Z",
+      sesRegionConfigured: true,
+      senderConfigured: true,
+      recipientConfigured: true,
+      awsErrorName: "AccessDeniedException",
+      classification: "access-denied",
+    });
+    expect(JSON.stringify(logger.mock.calls)).not.toContain("secret provider");
+    expect(JSON.stringify(logger.mock.calls)).not.toContain("sender@example");
   });
 });

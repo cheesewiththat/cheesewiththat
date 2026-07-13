@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.4 — Enquiry Email Delivery Fix
+
+- Removed duplicated visitor-facing retry copy and prevented concurrent enquiry retries while preserving entered values and edit/retry controls.
+- Made Amplify persist an explicit environment allow-list for the Next.js SSR runtime and fail builds with missing email configuration or a non-Mumbai SES region.
+- Added safe classified server-side delivery diagnostics and a local-only SES provider test utility.
+- Confirmed fixed server From/To routing, validated visitor Reply-To, Node.js Route Handler execution and default AWS credential-chain construction through regression tests.
+
 ## v0.1.3 — Map & Engagement Flow Fixes
 
 - Classified every engagement explicitly as a direct Calendly booking or an email-only enquiry.

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { buildCalendlyUrl } from "@/lib/calendly";
 import { CalendlyEmbed } from "@/components/calendly/CalendlyEmbed";
 import { submitPublicForm } from "@/lib/forms/client";
+import { runWithSubmissionLock } from "@/lib/forms/submission-lock";
 import { completeReviewWorkflow, enquirySuccessMessage } from "@/lib/workflows";
 import {
   type EngagementKind,
@@ -40,6 +41,7 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
     () => `booking_${crypto.randomUUID().replaceAll("-", "")}`,
   );
   const emailStatusRef = useRef<HTMLDivElement>(null);
+  const emailSubmissionLock = useRef(false);
   const schema = intakeSchemas[kind];
   const isBooking = isBookingEngagement(kind);
   const calendly = useMemo(
@@ -69,15 +71,20 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
       setEmailStatus("submitting");
       setEmailError("");
     }
-    const result = await completeReviewWorkflow(kind, () =>
-      submitPublicForm({
-        formType: kind as "training" | "consulting" | "speaking" | "career",
-        values,
-        sourcePage: window.location.pathname,
-        startedAt,
-        clientSubmissionKey,
-      }),
-    );
+    const complete = () =>
+      completeReviewWorkflow(kind, () =>
+        submitPublicForm({
+          formType: kind as "training" | "consulting" | "speaking" | "career",
+          values,
+          sourcePage: window.location.pathname,
+          startedAt,
+          clientSubmissionKey,
+        }),
+      );
+    const result = isBooking
+      ? await complete()
+      : await runWithSubmissionLock(emailSubmissionLock, complete);
+    if (!result) return;
     if (result.destination === "calendly") {
       setStep(4);
       return;
