@@ -18,7 +18,18 @@ NEXT_PUBLIC_SITE_URL=https://cheesewiththat.com
 
 Optional public integration configuration is documented in `.env.example` and `docs/integrations.md`. Restrict the Google browser key by domain and API. `NEXT_PUBLIC_MEDIA_BASE_URL` must be the single HTTPS web-media origin/path prefix; AWS credentials and private originals remain server-side and outside the site.
 
-Configure all five Calendly variables in Amplify. The four event variables select the exact event types and `NEXT_PUBLIC_CALENDLY_FALLBACK_URL` provides general scheduling only when an event URL is unavailable in production. These are public URLs, not secrets. Verify each production/preview booking flow and Calendly consent behaviour before launch.
+## Google Maps
+
+Set both public variables in Amplify before the build that should enable the interactive map:
+
+```text
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<restricted browser key>
+NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=<Google Cloud map ID>
+```
+
+Enable billing and the Maps JavaScript API in the Google Cloud project. Restrict the key to that API and authorize `https://cheesewiththat.com/*`, `https://www.cheesewiththat.com/*`, plus the active Amplify production or preview hostname while it is used. Public Next.js variables are embedded at build time, so save the variables and redeploy `main`. If either value is missing or Google fails, the route keeps its filters, location list and polished fallback instead of rendering a blank map.
+
+Configure all five Calendly variables in Amplify. The four event variables select the exact timed booking types and `NEXT_PUBLIC_CALENDLY_FALLBACK_URL` provides general scheduling only when a timed event URL is unavailable in production. These are public URLs, not secrets. Consulting, training, speaking and employment/leadership are email-only and do not use Calendly. Verify each production/preview booking flow and Calendly consent behaviour before launch.
 
 ## Amazon SES form delivery
 

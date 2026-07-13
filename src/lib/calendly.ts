@@ -1,4 +1,4 @@
-import type { EngagementKind } from "./intake";
+import type { BookingEngagementKind } from "./intake";
 
 export type CalendlyConfiguration = {
   fifteen?: string;
@@ -23,25 +23,14 @@ export const calendlyConfiguration: CalendlyConfiguration = {
 };
 
 export const engagementToCalendlyEvent: Record<
-  EngagementKind,
+  BookingEngagementKind,
   keyof Pick<CalendlyConfiguration, "fifteen" | "thirty" | "sixty" | "ninety">
 > = {
   direction: "fifteen",
   expert: "thirty",
   working: "sixty",
   idea: "ninety",
-  training: "thirty",
-  consulting: "thirty",
-  speaking: "thirty",
-  career: "thirty",
 };
-
-export const temporaryDiscoveryKinds: EngagementKind[] = [
-  "training",
-  "consulting",
-  "speaking",
-  "career",
-];
 
 const knownFallback =
   "https://calendly.com/mihirsatokar?hide_landing_page_details=1&hide_gdpr_banner=1";
@@ -61,7 +50,7 @@ function validCalendlyUrl(value?: string) {
 }
 
 export function resolveCalendlyEvent(
-  kind: EngagementKind,
+  kind: BookingEngagementKind,
   configuration: CalendlyConfiguration = calendlyConfiguration,
   environment = process.env.NODE_ENV,
 ) {
@@ -79,15 +68,11 @@ export function resolveCalendlyEvent(
   return { url: fallback.toString(), fallback: true, missing };
 }
 
-const summaryFields: Partial<Record<EngagementKind, string[]>> = {
+const summaryFields: Record<BookingEngagementKind, string[]> = {
   direction: ["topic", "question", "context"],
   expert: ["company", "topic", "desiredOutcome"],
   working: ["company", "problem", "requiredOutput"],
   idea: ["company", "customer", "problem", "requiredOutput"],
-  training: ["organisation", "topic", "objectives"],
-  consulting: ["organisation", "challenge", "outcome"],
-  speaking: ["organisation", "event", "topic"],
-  career: ["company", "roleTitle", "remit"],
 };
 
 function cleanPrefillValue(value: string, limit: number) {
@@ -99,7 +84,7 @@ function cleanPrefillValue(value: string, limit: number) {
 }
 
 export function buildBookingSummary(
-  kind: EngagementKind,
+  kind: BookingEngagementKind,
   title: string,
   values: Record<string, string>,
   limit = 480,
@@ -113,7 +98,7 @@ export function buildBookingSummary(
 }
 
 export function buildCalendlyUrl(
-  kind: EngagementKind,
+  kind: BookingEngagementKind,
   title: string,
   values: Record<string, string>,
   configuration: CalendlyConfiguration = calendlyConfiguration,

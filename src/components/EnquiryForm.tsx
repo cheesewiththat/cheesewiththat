@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { submitPublicForm } from "@/lib/forms/client";
+import { enquirySuccessMessage } from "@/lib/workflows";
 
 const labels: Record<string, string> = {
   name: "Name",
@@ -77,10 +78,7 @@ export function EnquiryForm({
         className="card bg-chartreuse p-6"
       >
         <h3 className="font-serif text-3xl">Message sent.</h3>
-        <p className="mt-2">
-          Thanks — your message has been sent to Mihir. He’ll review it and get
-          back to you.
-        </p>
+        <p className="mt-2">{enquirySuccessMessage}</p>
         <p className="mt-3 font-mono text-xs">
           Submission {submissionId.slice(0, 8)}
         </p>

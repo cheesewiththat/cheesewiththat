@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { locations } from "@/content/site";
 import type { LocationCategory } from "@/content/types";
-import { locationCategories } from "@/lib/locations";
+import {
+  getMapConfigurationDiagnostic,
+  getVisibleMapLocations,
+  hasValidCoordinates,
+  locationCategories,
+  type MapDiagnostic,
+} from "@/lib/locations";
 
 type GoogleMap = { fitBounds(bounds: unknown): void };
 type GoogleMapsRuntime = {
@@ -27,7 +33,7 @@ declare global {
 
 let googleMapsPromise: Promise<GoogleMapsRuntime> | undefined;
 
-function loadGoogleMaps(apiKey: string) {
+export function loadGoogleMaps(apiKey: string) {
   if (
     window.google?.maps.Map &&
     window.google.maps.marker?.AdvancedMarkerElement
@@ -45,9 +51,22 @@ function loadGoogleMaps(apiKey: string) {
     script.async = true;
     script.dataset.googleMaps = "true";
     script.onerror = () => reject(new Error("Google Maps failed to load"));
-    document.head.appendChild(script);
+    const existing = document.querySelector<HTMLScriptElement>(
+      "script[data-google-maps='true']",
+    );
+    if (existing) {
+      existing.addEventListener("error", () =>
+        reject(new Error("Google Maps failed to load")),
+      );
+    } else {
+      document.head.appendChild(script);
+    }
   });
   return googleMapsPromise;
+}
+
+export function resetGoogleMapsLoaderForTests() {
+  googleMapsPromise = undefined;
 }
 
 const markerColours: Record<LocationCategory, string> = {
@@ -61,30 +80,34 @@ const markerColours: Record<LocationCategory, string> = {
 };
 
 export function MihirMap() {
-  const publicLocations = useMemo(
-    () => locations.filter((location) => location.public),
+  const invalidLocationCount = useMemo(
+    () =>
+      locations.filter(
+        (location) => location.public && !hasValidCoordinates(location),
+      ).length,
     [],
   );
   const [activeCategories, setActiveCategories] =
     useState<LocationCategory[]>(locationCategories);
-  const [selectedId, setSelectedId] = useState(publicLocations[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(
+    () => getVisibleMapLocations(locations, locationCategories)[0]?.id ?? "",
+  );
   const [status, setStatus] = useState<
     "fallback" | "loading" | "ready" | "error"
   >(
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY &&
-      process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
+    getMapConfigurationDiagnostic() === undefined && !invalidLocationCount
       ? "loading"
       : "fallback",
   );
+  const [diagnostic, setDiagnostic] = useState<MapDiagnostic | undefined>(
+    invalidLocationCount
+      ? "location-data-invalid"
+      : getMapConfigurationDiagnostic(),
+  );
   const mapElement = useRef<HTMLDivElement>(null);
   const visible = useMemo(
-    () =>
-      publicLocations.filter((location) =>
-        location.categories.some((category) =>
-          activeCategories.includes(category),
-        ),
-      ),
-    [activeCategories, publicLocations],
+    () => getVisibleMapLocations(locations, activeCategories),
+    [activeCategories],
   );
   const selected =
     visible.find((location) => location.id === selectedId) ?? visible[0];
@@ -92,8 +115,20 @@ export function MihirMap() {
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
-    if (!key || !mapId || !mapElement.current) return;
-    const apiKey = key;
+    const configurationDiagnostic = getMapConfigurationDiagnostic(key, mapId);
+    if (configurationDiagnostic) {
+      setDiagnostic(configurationDiagnostic);
+      setStatus("fallback");
+      return;
+    }
+    if (!visible.length || !mapElement.current) {
+      if (!visible.length && invalidLocationCount) {
+        setDiagnostic("location-data-invalid");
+        setStatus("fallback");
+      }
+      return;
+    }
+    const apiKey = key!;
     let cancelled = false;
     async function initialise() {
       try {
@@ -129,6 +164,7 @@ export function MihirMap() {
             position: { lat, lng },
             title: `${location.city}, ${location.country}`,
             content: pin,
+            gmpClickable: true,
           });
           marker.addEventListener("gmp-click", () =>
             setSelectedId(location.id),
@@ -136,19 +172,29 @@ export function MihirMap() {
           bounds.extend({ lat, lng });
         });
         if (visible.length) map.fitBounds(bounds);
-        if (!cancelled) setStatus("ready");
-      } catch (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Google Maps initialisation failed", error);
+        if (!cancelled) {
+          setDiagnostic(undefined);
+          setStatus("ready");
         }
-        if (!cancelled) setStatus("error");
+      } catch (error) {
+        const nextDiagnostic =
+          error instanceof Error && error.message.includes("failed to load")
+            ? "script-failed"
+            : "initialisation-failed";
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`Mihir Map: ${nextDiagnostic}`, error);
+        }
+        if (!cancelled) {
+          setDiagnostic(nextDiagnostic);
+          setStatus("error");
+        }
       }
     }
     void initialise();
     return () => {
       cancelled = true;
     };
-  }, [visible]);
+  }, [invalidLocationCount, visible]);
 
   function toggleCategory(category: LocationCategory) {
     setActiveCategories((current) =>
@@ -182,7 +228,7 @@ export function MihirMap() {
             ))}
           </div>
         </fieldset>
-        <div className="relative mt-5 min-h-[28rem] w-full overflow-hidden rounded-2xl bg-teal">
+        <div className="relative mt-5 h-[28rem] w-full overflow-hidden rounded-2xl bg-teal sm:h-[32rem] lg:h-[36rem]">
           <div
             ref={mapElement}
             className={`absolute inset-0 ${status === "ready" ? "block" : "hidden"}`}
@@ -206,6 +252,11 @@ export function MihirMap() {
                     ? "Configure the Google Maps API key and Map ID to enable the interactive map. The accessible city list remains available now."
                     : "Use the city list while the map is unavailable."}
                 </p>
+                {process.env.NODE_ENV === "development" && diagnostic && (
+                  <p className="mt-4 font-mono text-xs" role="status">
+                    Diagnostic: {diagnostic}
+                  </p>
+                )}
               </div>
             </div>
           )}

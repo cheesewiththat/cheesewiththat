@@ -1,5 +1,27 @@
 # Phase 1 implementation plan
 
+## v0.1.3 — Map & Engagement Flow Fixes
+
+### Final workflow classification
+
+- Booking: Direction Check, Expert Session, Working Session and Idea Lab. Review proceeds directly to the exact matching Calendly event; the website email endpoint is never called, and success requires the trusted `calendly.event_scheduled` signal.
+- Enquiry: consulting, training, speaking, employment/leadership, CV request, general contact and print interest. Review submits to the server email endpoint; Calendly is never shown, and failure preserves values with an accessible retry.
+- Classification is explicit typed data on each engagement schema and is shared by the review flow, Calendly configuration and server form allow-list.
+
+### Map fix
+
+- Confirmed that interactive rendering requires both build-time public variables, the Maps JavaScript API with billing, a restricted production/preview referrer key and a Map ID for `AdvancedMarkerElement`.
+- Retained one on-demand loader promise and added duplicate-script protection, finite coordinate validation, invalid/hidden marker omission, valid visible-marker bounds fitting and explicit responsive height.
+- Added development-only diagnostics for missing key, missing Map ID, script failure, invalid location data and map initialization failure. Production retains a polished generic fallback, filters and accessible location list.
+
+### Verification
+
+- `npm run format:check` — passed.
+- `npm run lint` — passed with no warnings or errors; Next.js reports its upstream command deprecation notice.
+- `npm run typecheck` — passed.
+- `npm test` — passed: 6 files and 64 tests, including workflow classification, email bypass, enquiry retry, trusted booking completion, map configuration, coordinate validation, filtering, explicit height and loader reuse.
+- `npm run build` — passed with Next.js 15.5.7; all 28 pages generated.
+
 ## v0.1.2 — Personalise, Connect & Enquire
 
 ### Release scope
@@ -25,14 +47,14 @@
 - Required server-only email configuration: `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL` and `SES_REGION`. The application-specific region name avoids Amplify’s reserved `AWS` prefix and does not fall back to AWS SDK region variables. Runtime AWS credentials must come from Amplify’s IAM role/default credential chain, never browser variables.
 - Optional public configuration with local fallback: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` and `NEXT_PUBLIC_MEDIA_BASE_URL`.
 - `NEXT_PUBLIC_SITE_URL` may remain unset because the application defaults to the canonical `https://cheesewiththat.com` origin.
-- Dedicated training, consulting, career and speaking Calendly variables are not implemented; those workflows intentionally use the central 30-minute event mapping for this release.
+- Training, consulting, career and speaking are email-only enquiries and have no Calendly variables or event mapping.
 
 ## Secure form email delivery
 
 ### Form inventory
 
-- Bookable intake flows: Direction Check, Expert Session, Working Session, Idea Clinic, Training, Consulting, Speaking, and Employment/Leadership.
-- Email-only forms: CV Request and photography Print Enquiry/Register Interest.
+- Direct booking flows: Direction Check, Expert Session, Working Session and Idea Lab.
+- Email-only forms: consulting, training, speaking, employment/leadership, CV Request, general contact and photography Print Enquiry/Register Interest.
 - `EnquiryForm` has a reusable `general` type, but no standalone general-contact route currently exists.
 
 ### Delivery plan
@@ -40,17 +62,17 @@
 - Add one JSON-only `POST /api/forms/submit` Route Handler with an allow-listed form type, payload limit, schema validation, normalization, honeypot, completion-time checks, rate limiting and duplicate protection.
 - Add an injectable Amazon SES v2 delivery adapter using the default AWS credential provider chain and server-only sender/recipient/region configuration.
 - Generate escaped HTML and plain-text notification templates with a UUID submission ID; never accept From or To values from the browser.
-- Submit bookable intake only after review and reveal Calendly only after SES confirms success. Preserve values and provide retry on failure.
+- Reveal the matching Calendly event immediately after review for direct booking flows without calling SES. Submit enquiry flows by email, preserve values and provide retry on failure.
 - Convert CV and print forms from browser-only preview confirmation to verified server submission with accessible pending, error and success states.
 - Document SES identity verification, sandbox/production access, Amplify configuration and remaining inactive capabilities.
 
 ### Email delivery completed
 
-- Connected all eight bookable intake types plus CV, print and reusable general enquiries to the JSON Route Handler.
+- Connected only enquiry workflows to the JSON Route Handler; direct booking workflows deliberately bypass it.
 - Added SES v2 delivery with fixed server-only From/To configuration and visitor Reply-To.
-- Added escaped HTML/plain-text templates, UUID submission IDs, Calendly “not yet scheduled” context, safe provider failures and retryable client states.
+- Added escaped HTML/plain-text enquiry templates, UUID submission IDs, safe provider failures and retryable client states.
 - Added honeypot, completion timing, allow-list/schema validation, strict email/URL/header validation, payload limits, best-effort rate limiting and concurrent duplicate suppression.
-- Calendly now remains unavailable until SES confirms the corresponding context email; CV and print forms show success only after SES confirms delivery.
+- Calendly appears only for the four booking workflows after review. Enquiries never show Calendly and show success only after SES confirms delivery.
 - Verification: formatting, lint and type checking passed; 50 tests across 5 files passed; the Next.js 15.5.7 production build generated all 28 pages successfully, including the dynamic form endpoint.
 
 ## v0.1.1 — Find, Explore & Book

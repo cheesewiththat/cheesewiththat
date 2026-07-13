@@ -10,14 +10,55 @@ export const locationCategories: LocationCategory[] = [
   "Want to visit",
 ];
 
+export type MapDiagnostic =
+  | "api-key-missing"
+  | "map-id-missing"
+  | "script-failed"
+  | "location-data-invalid"
+  | "initialisation-failed";
+
+export function hasValidCoordinates(location: Pick<Location, "coordinates">) {
+  const [latitude, longitude] = location.coordinates;
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+export function getMapConfigurationDiagnostic(
+  apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
+): MapDiagnostic | undefined {
+  if (!apiKey?.trim()) return "api-key-missing";
+  if (!mapId?.trim()) return "map-id-missing";
+  return undefined;
+}
+
+export function getVisibleMapLocations(
+  records: Location[],
+  categories: LocationCategory[],
+) {
+  return records.filter(
+    (location) =>
+      location.public &&
+      hasValidCoordinates(location) &&
+      location.categories.some((category) => categories.includes(category)),
+  );
+}
+
 export function validateLocation(location: Location) {
   const [latitude, longitude] = location.coordinates;
   const errors: string[] = [];
   if (!location.city.trim() || !location.country.trim())
     errors.push("City and country are required");
-  if (latitude < -90 || latitude > 90) errors.push("Latitude is out of range");
-  if (longitude < -180 || longitude > 180)
-    errors.push("Longitude is out of range");
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)
+    errors.push("Latitude is invalid or out of range");
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180)
+    errors.push("Longitude is invalid or out of range");
   if (
     !location.categories.length ||
     location.categories.some(
@@ -34,5 +75,5 @@ export function hasGoogleMapsConfiguration(
   apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
 ) {
-  return Boolean(apiKey?.trim() && mapId?.trim());
+  return getMapConfigurationDiagnostic(apiKey, mapId) === undefined;
 }
