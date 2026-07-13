@@ -207,7 +207,7 @@ export const engagements: Engagement[] = [
   },
   {
     slug: "idea-clinic",
-    title: "90-minute Idea Clinic",
+    title: "90-minute Idea Lab",
     duration: "90 min",
     description: "Pressure-test an idea, proposition, roadmap or programme.",
     mode: "preview",

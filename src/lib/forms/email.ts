@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
-import { intakeSchemas, type EngagementKind } from "@/lib/intake";
-import { resolveCalendlyEvent } from "@/lib/calendly";
+import { intakeSchemas, type EnquiryEngagementKind } from "@/lib/intake";
 import {
-  bookableFormTypes,
+  engagementEnquiryFormTypes,
   formTypeLabels,
   type FormSubmissionRequest,
   type FormType,
@@ -84,25 +83,15 @@ const genericLabels: Record<string, string> = {
 };
 
 function answerLabels(formType: FormType) {
-  if (!bookableFormTypes.includes(formType)) return genericLabels;
+  if (!engagementEnquiryFormTypes.includes(formType as EnquiryEngagementKind))
+    return genericLabels;
   return Object.fromEntries(
-    intakeSchemas[formType as EngagementKind].fields.map((field) => [
+    intakeSchemas[formType as EnquiryEngagementKind].fields.map((field) => [
       field.name,
       field.label,
     ]),
   );
 }
-
-const durationLabels: Partial<Record<FormType, string>> = {
-  direction: "15 minutes",
-  expert: "30 minutes",
-  working: "60 minutes",
-  idea: "90 minutes",
-  training: "30-minute discovery",
-  consulting: "30-minute discovery",
-  speaking: "30-minute discovery",
-  career: "30-minute discovery",
-};
 
 export function buildNotificationEmail(
   submission: FormSubmissionRequest,
@@ -136,22 +125,6 @@ export function buildNotificationEmail(
     summary.push(["Website", submission.values.website]);
   if (submission.formType === "training" && submission.values.location)
     summary.push(["Visitor time zone", submission.values.location]);
-  if (bookableFormTypes.includes(submission.formType)) {
-    const calendly = resolveCalendlyEvent(
-      submission.formType as EngagementKind,
-      undefined,
-      "production",
-    );
-    summary.push(
-      ["Calendly status", "Not yet scheduled"],
-      ["Intended event", label],
-      [
-        "Intended duration",
-        durationLabels[submission.formType] ?? "General scheduling",
-      ],
-      ["Intended Calendly URL", calendly.url ?? "Not configured"],
-    );
-  }
   const textLines = [
     ...summary.map(([key, value]) => `${key}: ${value}`),
     "",

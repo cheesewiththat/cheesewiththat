@@ -1,12 +1,14 @@
-import type { EngagementKind } from "@/lib/intake";
+import {
+  type EngagementKind,
+  type EngagementWorkflow,
+  type EnquiryEngagementKind,
+  intakeSchemas,
+} from "@/lib/intake";
 
-export type FormType = EngagementKind | "cv" | "print" | "general";
+export type FormType = EnquiryEngagementKind | "cv" | "print" | "general";
+export type PublicWorkflowType = EngagementKind | "cv" | "print" | "general";
 
 export const formTypes: FormType[] = [
-  "direction",
-  "expert",
-  "working",
-  "idea",
   "training",
   "consulting",
   "speaking",
@@ -17,10 +19,6 @@ export const formTypes: FormType[] = [
 ];
 
 export const formTypeLabels: Record<FormType, string> = {
-  direction: "Direction Check",
-  expert: "Expert Session",
-  working: "Working Session",
-  idea: "Idea Clinic",
   training: "Training",
   consulting: "Consulting",
   speaking: "Speaking",
@@ -30,16 +28,26 @@ export const formTypeLabels: Record<FormType, string> = {
   general: "General Contact",
 };
 
-export const bookableFormTypes: FormType[] = [
-  "direction",
-  "expert",
-  "working",
-  "idea",
+export const engagementEnquiryFormTypes: EnquiryEngagementKind[] = [
   "training",
   "consulting",
   "speaking",
   "career",
 ];
+
+export const workflowByType: Record<PublicWorkflowType, EngagementWorkflow> = {
+  direction: intakeSchemas.direction.workflow,
+  expert: intakeSchemas.expert.workflow,
+  working: intakeSchemas.working.workflow,
+  idea: intakeSchemas.idea.workflow,
+  training: intakeSchemas.training.workflow,
+  consulting: intakeSchemas.consulting.workflow,
+  speaking: intakeSchemas.speaking.workflow,
+  career: intakeSchemas.career.workflow,
+  cv: "enquiry",
+  general: "enquiry",
+  print: "enquiry",
+};
 
 export type FormSubmissionRequest = {
   formType: FormType;

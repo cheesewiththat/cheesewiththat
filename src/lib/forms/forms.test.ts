@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { POST } from "@/app/api/forms/submit/route";
 import { intakeSchemas, type EngagementKind } from "@/lib/intake";
-import { canProceedToScheduling, submitPublicForm } from "./client";
+import { submitPublicForm } from "./client";
 import {
   buildNotificationEmail,
   escapeHtml,
@@ -89,6 +89,14 @@ describe("form submission validation", () => {
       ),
     ).toMatchObject({ valid: false, code: "unknown_form" });
   });
+  it.each(["direction", "expert", "working", "idea"])(
+    "rejects booking-only %s payloads at the email endpoint",
+    (formType) => {
+      expect(
+        validateSubmissionPayload({ ...submission("general"), formType }, now),
+      ).toMatchObject({ valid: false, code: "unknown_form" });
+    },
+  );
   it("rejects invalid email and URL fields", () => {
     expect(
       validateSubmissionPayload(
@@ -100,8 +108,8 @@ describe("form submission validation", () => {
     ).toMatchObject({ valid: false });
     expect(
       validateSubmissionPayload(
-        submission("working", {
-          values: { ...valuesFor("working"), website: "not-a-url" },
+        submission("consulting", {
+          values: { ...valuesFor("consulting"), website: "not-a-url" },
         }),
         now,
       ),
@@ -194,11 +202,11 @@ describe("SES notification construction", () => {
       }),
     ).toThrow("Email delivery is not configured");
   });
-  it("escapes HTML and includes HTML, text, submitted fields and unscheduled Calendly status", () => {
-    const dangerous = submission("direction", {
+  it("escapes HTML and includes HTML, text and submitted enquiry fields", () => {
+    const dangerous = submission("consulting", {
       values: {
-        ...valuesFor("direction"),
-        context: "<script>alert('x')</script>",
+        ...valuesFor("consulting"),
+        challenge: "<script>alert('x')</script>",
       },
     });
     const message = buildNotificationEmail(
@@ -208,8 +216,8 @@ describe("SES notification construction", () => {
     );
     expect(message.html).not.toContain("<script>");
     expect(message.html).toContain("&lt;script&gt;");
-    expect(message.text).toContain("Not yet scheduled");
-    expect(message.html).toContain("Useful response for Topic");
+    expect(message.text).not.toContain("Calendly");
+    expect(message.html).toContain("Business or technology challenge");
     expect(escapeHtml("<&")).toBe("&lt;&amp;");
   });
 });
@@ -260,22 +268,19 @@ describe("delivery, deduplication and safe responses", () => {
     });
     expect(JSON.stringify(result)).not.toContain("AWS");
   });
-  it("gates Calendly on successful email and preserves the submitted object on failure", async () => {
-    const success = { ok: true as const, submissionId: "id" };
+  it("preserves an enquiry submission object on delivery failure", async () => {
     const failure = {
       ok: false as const,
       code: "delivery_failed",
       message: "Try again",
     };
-    expect(canProceedToScheduling(success)).toBe(true);
-    expect(canProceedToScheduling(failure)).toBe(false);
-    const original = submission("direction");
+    const original = submission("consulting");
     const fetcher = async () =>
       new Response(JSON.stringify(failure), {
         status: 503,
         headers: { "Content-Type": "application/json" },
       });
     await submitPublicForm(original, fetcher as typeof fetch);
-    expect(original.values).toEqual(valuesFor("direction"));
+    expect(original.values).toEqual(valuesFor("consulting"));
   });
 });

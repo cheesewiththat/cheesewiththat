@@ -10,8 +10,8 @@ export default function Book() {
         title="Choose the shape of the useful conversation."
       >
         <p>
-          Select a conversation, provide only the relevant context, review it,
-          then schedule when the matching Calendly event is configured.
+          Select a conversation, provide only the relevant context and review
+          it—then book the timed session or send the enquiry.
         </p>
       </PageIntro>
       <section className="px-5 pb-20 lg:px-10">

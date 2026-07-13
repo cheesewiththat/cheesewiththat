@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.3 — Map & Engagement Flow Fixes
+
+- Classified every engagement explicitly as a direct Calendly booking or an email-only enquiry.
+- Removed website email delivery from the four timed sessions and removed temporary Calendly routing from consulting, training, speaking and career enquiries.
+- Preserved the four exact Calendly event mappings, structured prefill and trusted scheduled-event confirmation.
+- Strengthened Google Maps configuration diagnostics, coordinate validation, single-script loading, marker filtering, bounds fitting and responsive fallback behavior.
+- Documented Amplify build-time map configuration and Google Cloud API, billing and referrer requirements.
+
 ## v0.1.2 — Personalise, Connect & Enquire
 
 - Added the story-led “A little about me” section and Mihir’s approved waterfront portrait.

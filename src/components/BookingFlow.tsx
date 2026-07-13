@@ -2,11 +2,13 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { buildCalendlyUrl, temporaryDiscoveryKinds } from "@/lib/calendly";
+import { buildCalendlyUrl } from "@/lib/calendly";
 import { CalendlyEmbed } from "@/components/calendly/CalendlyEmbed";
-import { canProceedToScheduling, submitPublicForm } from "@/lib/forms/client";
+import { submitPublicForm } from "@/lib/forms/client";
+import { completeReviewWorkflow, enquirySuccessMessage } from "@/lib/workflows";
 import {
   type EngagementKind,
+  isBookingEngagement,
   intakeSchemas,
   validateIntake,
 } from "@/lib/intake";
@@ -39,8 +41,12 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
   );
   const emailStatusRef = useRef<HTMLDivElement>(null);
   const schema = intakeSchemas[kind];
+  const isBooking = isBookingEngagement(kind);
   const calendly = useMemo(
-    () => buildCalendlyUrl(kind, schema.title, values),
+    () =>
+      isBookingEngagement(kind)
+        ? buildCalendlyUrl(kind, schema.title, values)
+        : undefined,
     [kind, schema.title, values],
   );
   const confirmBooking = useCallback(() => setConfirmed(true), []);
@@ -57,21 +63,26 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
     setEmailError("");
   }
 
-  async function sendContext() {
-    if (submissionId) {
+  async function completeReview() {
+    if (submissionId) return;
+    if (!isBooking) {
+      setEmailStatus("submitting");
+      setEmailError("");
+    }
+    const result = await completeReviewWorkflow(kind, () =>
+      submitPublicForm({
+        formType: kind as "training" | "consulting" | "speaking" | "career",
+        values,
+        sourcePage: window.location.pathname,
+        startedAt,
+        clientSubmissionKey,
+      }),
+    );
+    if (result.destination === "calendly") {
       setStep(4);
       return;
     }
-    setEmailStatus("submitting");
-    setEmailError("");
-    const result = await submitPublicForm({
-      formType: kind,
-      values,
-      sourcePage: window.location.pathname,
-      startedAt,
-      clientSubmissionKey,
-    });
-    if (canProceedToScheduling(result) && result.ok) {
+    if (result.destination === "sent") {
       setSubmissionId(result.submissionId);
       setEmailStatus("sent");
       setStep(4);
@@ -79,7 +90,7 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
       return;
     }
     setEmailStatus("failed");
-    setEmailError(result.message);
+    setEmailError(result.response.message);
     window.requestAnimationFrame(() => emailStatusRef.current?.focus());
   }
   function review() {
@@ -91,18 +102,20 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
   return (
     <div className="mx-auto max-w-4xl">
       <div
-        aria-label="Booking progress"
+        aria-label="Engagement progress"
         className="mb-8 grid grid-cols-4 gap-2"
       >
-        {["Choose", "Intake", "Review", "Schedule"].map((label, index) => (
-          <div
-            key={label}
-            className={`border-t-4 pt-2 text-xs ${step >= index + 1 ? "border-cobalt font-semibold" : "border-ink/15"}`}
-          >
-            <span className="sr-only">Step {index + 1}: </span>
-            {label}
-          </div>
-        ))}
+        {["Choose", "Intake", "Review", isBooking ? "Schedule" : "Sent"].map(
+          (label, index) => (
+            <div
+              key={label}
+              className={`border-t-4 pt-2 text-xs ${step >= index + 1 ? "border-cobalt font-semibold" : "border-ink/15"}`}
+            >
+              <span className="sr-only">Step {index + 1}: </span>
+              {label}
+            </div>
+          ),
+        )}
       </div>
 
       {step === 1 && (
@@ -139,8 +152,9 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
             The useful context first.
           </h2>
           <p className="mt-3 max-w-2xl">
-            Your answers stay in this browser until you review them. They are
-            emailed securely to Mihir before scheduling becomes available.
+            {isBooking
+              ? "Your answers stay in this browser and are used only to prepare and prefill the matching Calendly booking after review."
+              : "Your answers stay in this browser until you review them, then they are sent securely to Mihir by email."}
           </p>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {schema.fields.map((field) => (
@@ -270,15 +284,15 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
             </button>
             <button
               type="button"
-              onClick={sendContext}
+              onClick={completeReview}
               disabled={emailStatus === "submitting"}
               className="button bg-ink text-cream"
             >
-              {emailStatus === "submitting"
-                ? "Sending securely…"
-                : submissionId
-                  ? "Continue to scheduling"
-                  : "Send context and continue"}
+              {isBooking
+                ? "Continue to scheduling"
+                : emailStatus === "submitting"
+                  ? "Sending securely…"
+                  : "Send enquiry"}
             </button>
           </div>
           {emailStatus === "failed" && (
@@ -291,7 +305,7 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
               <p>{emailError}</p>
               <button
                 type="button"
-                onClick={sendContext}
+                onClick={completeReview}
                 className="button mt-4 border border-ink"
               >
                 Try again
@@ -303,24 +317,25 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
 
       {step === 4 && (
         <section>
-          <p className="eyebrow">Schedule · {schema.title}</p>
-          <div
-            ref={emailStatusRef}
-            tabIndex={-1}
-            className="card mt-5 border-teal bg-cream p-5"
-            role="status"
-          >
-            <p className="font-semibold">
-              Thanks — your context has been sent to Mihir. Now choose a time
-              that works.
-            </p>
-            {submissionId && (
-              <p className="mt-2 font-mono text-xs">
-                Submission {submissionId.slice(0, 8)}
-              </p>
-            )}
-          </div>
-          {confirmed ? (
+          <p className="eyebrow">
+            {isBooking ? "Schedule" : "Enquiry sent"} · {schema.title}
+          </p>
+          {!isBooking ? (
+            <div
+              ref={emailStatusRef}
+              tabIndex={-1}
+              className="card mt-5 border-teal bg-cream p-7"
+              role="status"
+            >
+              <h2 className="font-serif text-5xl">Message sent.</h2>
+              <p className="mt-3 font-semibold">{enquirySuccessMessage}</p>
+              {submissionId && (
+                <p className="mt-3 font-mono text-xs">
+                  Submission {submissionId.slice(0, 8)}
+                </p>
+              )}
+            </div>
+          ) : confirmed ? (
             <div role="status" className="card bg-chartreuse/30 mt-5 p-7">
               <h2 className="font-serif text-5xl">Booking confirmed.</h2>
               <p className="mt-3">
@@ -328,15 +343,8 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
                 calendar details.
               </p>
             </div>
-          ) : calendly.url ? (
+          ) : calendly?.url ? (
             <>
-              {temporaryDiscoveryKinds.includes(kind) && (
-                <p className="card mt-5 border-brass bg-cream p-4 text-sm">
-                  This is an initial discovery conversation to understand fit
-                  and next steps—not the full engagement, workshop or role
-                  discussion.
-                </p>
-              )}
               {calendly.fallback && (
                 <p className="card mt-5 border-brass bg-cream p-4 text-sm">
                   The specific event is unavailable, so this opens general
@@ -357,7 +365,7 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
                 delivered.
               </p>
               <p className="mt-3 font-mono text-xs">
-                Configure {calendly.missing ?? schema.calendlyEnvironment} to
+                Configure {calendly?.missing ?? schema.calendlyEnvironment} to
                 enable scheduling.
               </p>
             </div>

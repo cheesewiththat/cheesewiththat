@@ -9,9 +9,16 @@ import {
   subscribeToCalendlyEvents,
   type CalendlyConfiguration,
 } from "./calendly";
-import { intakeSchemas, validateIntake } from "./intake";
-import { hasGoogleMapsConfiguration, validateLocation } from "./locations";
+import { getEngagementWorkflow, intakeSchemas, validateIntake } from "./intake";
+import {
+  getMapConfigurationDiagnostic,
+  getVisibleMapLocations,
+  hasGoogleMapsConfiguration,
+  validateLocation,
+} from "./locations";
 import { isLocalMediaPath, resolveMediaPath } from "./media";
+import { completeReviewWorkflow, enquirySuccessMessage } from "./workflows";
+import { workflowByType } from "./forms/types";
 import { locations } from "@/content/site";
 
 const calendly: CalendlyConfiguration = {
@@ -23,7 +30,7 @@ const calendly: CalendlyConfiguration = {
     "https://calendly.com/mihirsatokar?hide_landing_page_details=1&hide_gdpr_banner=1",
 };
 
-describe("v0.1.1 configuration and validation", () => {
+describe("v0.1.3 configuration and validation", () => {
   it("provides different conditional schemas", () => {
     expect(intakeSchemas.direction.fields.map((field) => field.name)).toContain(
       "question",
@@ -59,6 +66,12 @@ describe("v0.1.1 configuration and validation", () => {
   });
   it("falls back without complete Google Maps configuration", () => {
     expect(hasGoogleMapsConfiguration(undefined, undefined)).toBe(false);
+    expect(getMapConfigurationDiagnostic(undefined, "map-id")).toBe(
+      "api-key-missing",
+    );
+    expect(getMapConfigurationDiagnostic("key", undefined)).toBe(
+      "map-id-missing",
+    );
     expect(hasGoogleMapsConfiguration("key", "map-id")).toBe(true);
   });
   it("validates all public sample locations", () => {
@@ -68,6 +81,18 @@ describe("v0.1.1 configuration and validation", () => {
     expect(
       validateLocation({ ...locations[0], coordinates: [100, 200] }).valid,
     ).toBe(false);
+    expect(
+      validateLocation({ ...locations[0], coordinates: [Number.NaN, 0] }).valid,
+    ).toBe(false);
+  });
+  it("filters hidden, invalid and inactive map markers before fitting", () => {
+    const records = [
+      locations[0],
+      { ...locations[1], public: false },
+      { ...locations[2], coordinates: [Number.NaN, 0] as [number, number] },
+    ];
+    const visible = getVisibleMapLocations(records, locations[0].categories);
+    expect(visible).toEqual([locations[0]]);
   });
   it("resolves local and allow-listed remote media paths", () => {
     expect(isLocalMediaPath("/images/local.svg")).toBe(true);
@@ -92,10 +117,6 @@ describe("Calendly event mapping", () => {
     ["expert", "/mihirsatokar/30min"],
     ["working", "/mihirsatokar/60-minute-meeting"],
     ["idea", "/mihirsatokar/idea-lab"],
-    ["training", "/mihirsatokar/30min"],
-    ["consulting", "/mihirsatokar/30min"],
-    ["speaking", "/mihirsatokar/30min"],
-    ["career", "/mihirsatokar/30min"],
   ] as const;
   it.each(cases)("maps %s to %s", (kind, path) => {
     expect(
@@ -119,6 +140,53 @@ describe("Calendly event mapping", () => {
     );
     expect(result.url).toBeUndefined();
     expect(result.missing).toBe("NEXT_PUBLIC_CALENDLY_90_URL");
+  });
+});
+
+describe("booking and enquiry workflows", () => {
+  it.each(["direction", "expert", "working", "idea"] as const)(
+    "classifies %s as booking",
+    (kind) => expect(getEngagementWorkflow(kind)).toBe("booking"),
+  );
+  it.each(["training", "consulting", "speaking", "career"] as const)(
+    "classifies %s as enquiry",
+    (kind) => expect(getEngagementWorkflow(kind)).toBe("enquiry"),
+  );
+  it.each(["cv", "general", "print"] as const)(
+    "classifies %s as enquiry",
+    (kind) => expect(workflowByType[kind]).toBe("enquiry"),
+  );
+  it("moves bookings directly to Calendly without calling email", async () => {
+    let emailCalls = 0;
+    const result = await completeReviewWorkflow("direction", async () => {
+      emailCalls += 1;
+      return { ok: true, submissionId: "not-used" };
+    });
+    expect(result).toEqual({ destination: "calendly" });
+    expect(emailCalls).toBe(0);
+  });
+  it("sends enquiries by email and never routes them to Calendly", async () => {
+    let emailCalls = 0;
+    const result = await completeReviewWorkflow("consulting", async () => {
+      emailCalls += 1;
+      return { ok: true, submissionId: "sent-id" };
+    });
+    expect(result).toEqual({ destination: "sent", submissionId: "sent-id" });
+    expect(emailCalls).toBe(1);
+    expect(enquirySuccessMessage).toBe(
+      "Thanks — your message has been sent to Mihir. He’ll review it and get back to you.",
+    );
+  });
+  it("returns retry without mutating enquiry data when email fails", async () => {
+    const values = { name: "Jane", challenge: "Useful context" };
+    const before = { ...values };
+    const result = await completeReviewWorkflow("training", async () => ({
+      ok: false,
+      code: "delivery_failed",
+      message: "Try again",
+    }));
+    expect(result.destination).toBe("retry");
+    expect(values).toEqual(before);
   });
 });
 

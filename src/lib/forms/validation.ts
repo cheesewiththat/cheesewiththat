@@ -5,7 +5,7 @@ import {
 } from "@/lib/intake";
 import { validateEnquiry } from "@/lib/validation";
 import {
-  bookableFormTypes,
+  engagementEnquiryFormTypes,
   formTypes,
   type FormSubmissionRequest,
   type FormType,
@@ -26,7 +26,9 @@ export function isFormType(value: unknown): value is FormType {
 }
 
 function allowedFields(formType: FormType) {
-  return bookableFormTypes.includes(formType)
+  return engagementEnquiryFormTypes.includes(
+    formType as (typeof engagementEnquiryFormTypes)[number],
+  )
     ? intakeSchemas[formType as EngagementKind].fields.map(
         (field) => field.name,
       )
@@ -158,7 +160,11 @@ export function validateSubmissionPayload(
       errors: { email: "Enter a valid email address." },
     };
 
-  if (bookableFormTypes.includes(raw.formType)) {
+  if (
+    engagementEnquiryFormTypes.includes(
+      raw.formType as (typeof engagementEnquiryFormTypes)[number],
+    )
+  ) {
     const result = validateIntake(
       raw.formType as EngagementKind,
       values,

@@ -2,7 +2,7 @@
 
 Phase 1 of `cheesewiththat.com`: Mihir’s personal brand, professional portfolio, consulting, training, photography and future commerce platform.
 
-Current release: **v0.1.1 — Find, Explore & Book**.
+Current release: **v0.1.3 — Map & Engagement Flow Fixes**.
 
 ## Run locally
 
@@ -38,7 +38,9 @@ npm run build
 - CSS design tokens and Tailwind utilities
 - AWS Amplify build definition in `amplify.yml`
 
-Calendly booking is active when its public event URLs are configured. Public forms submit through `/api/forms/submit` and Amazon SES when the server-only notification addresses, SES region, verified sender identity and AWS credentials are configured. Payment, checkout and fulfilment remain inactive. Do not add secrets to the repository; use Amplify environment variables and IAM roles.
+Direction Check, Expert Session, Working Session and Idea Lab proceed from reviewed preparation directly to their matching Calendly events; they do not call the website email endpoint. Consulting, training, speaking, employment/leadership, CV, general contact and print forms submit through `/api/forms/submit` and Amazon SES without opening Calendly. Success is shown only after the relevant provider confirms it. Payment, checkout and fulfilment remain inactive.
+
+The interactive map requires both `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` at build time. Without either—or if Google fails—the filters and accessible location list remain available with a polished fallback panel. Public environment-variable changes in Amplify require a new deployment.
 
 Local email delivery requires `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL`, `SES_REGION`, and AWS credentials supplied through the default SDK credential chain. `SES_REGION` is application configuration and avoids Amplify’s reserved `AWS` prefix. Never prefix email settings or credentials with `NEXT_PUBLIC_`.
 

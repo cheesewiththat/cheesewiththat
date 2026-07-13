@@ -23,7 +23,3 @@ export async function submitPublicForm(
     };
   }
 }
-
-export function canProceedToScheduling(result: FormSubmissionResponse) {
-  return result.ok;
-}

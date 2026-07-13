@@ -7,6 +7,12 @@ export type EngagementKind =
   | "consulting"
   | "career"
   | "speaking";
+export type BookingEngagementKind = "direction" | "expert" | "working" | "idea";
+export type EnquiryEngagementKind = Exclude<
+  EngagementKind,
+  BookingEngagementKind
+>;
+export type EngagementWorkflow = "booking" | "enquiry";
 export type IntakeField = {
   name: string;
   label: string;
@@ -17,10 +23,11 @@ export type IntakeField = {
 };
 export type IntakeSchema = {
   id: EngagementKind;
+  workflow: EngagementWorkflow;
   title: string;
   description: string;
   fields: IntakeField[];
-  calendlyEnvironment: string;
+  calendlyEnvironment?: string;
 };
 const identity = (nameLabel = "Name"): IntakeField[] => [
   { name: "name", label: nameLabel, type: "text", required: true },
@@ -30,6 +37,7 @@ const identity = (nameLabel = "Name"): IntakeField[] => [
 export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   direction: {
     id: "direction",
+    workflow: "booking",
     title: "15-minute Direction Check",
     description: "One focused question and the context needed to answer it.",
     calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_15_URL",
@@ -53,6 +61,7 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   expert: {
     id: "expert",
+    workflow: "booking",
     title: "30-minute Expert Session",
     description: "Focused perspective on a product, AI or telecom question.",
     calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_30_URL",
@@ -78,6 +87,7 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   working: {
     id: "working",
+    workflow: "booking",
     title: "60-minute Working Session",
     description: "Work through a problem and leave with a practical output.",
     calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_60_URL",
@@ -114,7 +124,8 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   idea: {
     id: "idea",
-    title: "90-minute Idea Clinic",
+    workflow: "booking",
+    title: "90-minute Idea Lab",
     description: "Pressure-test an idea, proposition, roadmap or programme.",
     calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_90_URL",
     fields: [
@@ -155,9 +166,9 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   training: {
     id: "training",
+    workflow: "enquiry",
     title: "Training discussion",
     description: "Shape a useful programme for the audience and context.",
-    calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_TRAINING_URL",
     fields: [
       ...identity("Contact name"),
       {
@@ -220,10 +231,10 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   consulting: {
     id: "consulting",
+    workflow: "enquiry",
     title: "Consulting discovery",
     description:
       "Give enough context to qualify the most useful next conversation.",
-    calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_CONSULTING_URL",
     fields: [
       ...identity("Contact name"),
       {
@@ -275,10 +286,10 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   career: {
     id: "career",
+    workflow: "enquiry",
     title: "Employment or leadership conversation",
     description:
       "Share the role context without requesting sensitive personal information.",
-    calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_CAREER_URL",
     fields: [
       { name: "name", label: "Contact name", type: "text", required: true },
       { name: "email", label: "Work email", type: "email", required: true },
@@ -307,9 +318,9 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
   },
   speaking: {
     id: "speaking",
+    workflow: "enquiry",
     title: "Speaking enquiry",
     description: "Describe the event, audience and proposed contribution.",
-    calendlyEnvironment: "NEXT_PUBLIC_CALENDLY_SPEAKING_URL",
     fields: [
       ...identity("Contact name"),
       {
@@ -340,6 +351,24 @@ export const intakeSchemas: Record<EngagementKind, IntakeSchema> = {
     ],
   },
 };
+
+export const bookingEngagementKinds = Object.values(intakeSchemas)
+  .filter((schema) => schema.workflow === "booking")
+  .map((schema) => schema.id);
+
+export const enquiryEngagementKinds = Object.values(intakeSchemas)
+  .filter((schema) => schema.workflow === "enquiry")
+  .map((schema) => schema.id);
+
+export function getEngagementWorkflow(kind: EngagementKind) {
+  return intakeSchemas[kind].workflow;
+}
+
+export function isBookingEngagement(
+  kind: EngagementKind,
+): kind is BookingEngagementKind {
+  return getEngagementWorkflow(kind) === "booking";
+}
 
 export function validateIntake(
   kind: EngagementKind,
