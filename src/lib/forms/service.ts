@@ -19,6 +19,7 @@ export async function deliverFormSubmission(
     provider?: EmailProvider;
     now?: Date;
     configuration?: { from: string; to: string; region: string };
+    submissionId?: string;
   },
 ) {
   const now = dependencies?.now ?? new Date();
@@ -32,7 +33,7 @@ export async function deliverFormSubmission(
       dependencies?.configuration ?? getEmailConfiguration();
     const provider =
       dependencies?.provider ?? createSesProvider(configuration.region);
-    const submissionId = createSubmissionId();
+    const submissionId = dependencies?.submissionId ?? createSubmissionId();
     const message = buildNotificationEmail(
       submission,
       submissionId,

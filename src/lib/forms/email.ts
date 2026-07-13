@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
+import {
+  SendEmailCommand,
+  SESv2Client,
+  type SESv2ClientConfig,
+} from "@aws-sdk/client-sesv2";
 import { intakeSchemas, type EnquiryEngagementKind } from "@/lib/intake";
+import { EmailConfigurationError } from "./diagnostics";
 import {
   engagementEnquiryFormTypes,
   formTypeLabels,
@@ -28,13 +33,20 @@ export function getEmailConfiguration(
   const from = environment.FORM_NOTIFICATION_FROM_EMAIL?.trim();
   const region = environment.SES_REGION?.trim();
   if (!to || !from || !region)
-    throw new Error("Email delivery is not configured");
+    throw new EmailConfigurationError("Email delivery is not configured");
   if (
     ![to, from].every((value) =>
       /^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/.test(value),
     )
   )
-    throw new Error("Email delivery configuration is invalid");
+    throw new EmailConfigurationError(
+      "Email delivery configuration is invalid",
+    );
+  if (region !== "ap-south-1")
+    throw new EmailConfigurationError(
+      "Email delivery region does not match the verified SES identity region",
+      "region-mismatch",
+    );
   return { to, from, region };
 }
 
@@ -60,8 +72,14 @@ export class SesEmailProvider implements EmailProvider {
   }
 }
 
+export function getSesClientConfiguration(region: string): SESv2ClientConfig {
+  return { region };
+}
+
 export function createSesProvider(region: string) {
-  return new SesEmailProvider(new SESv2Client({ region }));
+  return new SesEmailProvider(
+    new SESv2Client(getSesClientConfiguration(region)),
+  );
 }
 
 export function escapeHtml(value: string) {

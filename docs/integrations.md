@@ -22,3 +22,7 @@ The widget script loads only after a visitor completes and reviews the relevant 
 In development, a missing event variable produces a developer-facing configuration message. In production, the general profile URL is used and labelled as general scheduling without claiming an event duration. Script-load failure provides a direct Calendly fallback link rather than an empty container.
 
 Booking preparation remains in browser memory and is passed only through supported, sanitized Calendly prefill fields. Email-only enquiries use the validated server endpoint and show success only after provider confirmation. Before production use, confirm Calendly consent/cookie requirements and avoid putting sensitive data in URLs.
+
+## Amazon SES
+
+Email-only enquiries use the Node.js `/api/forms/submit` Route Handler and SES v2 in `ap-south-1`. Amplify persists only the explicit environment allow-list during the build; From and To remain fixed server configuration, and the visitor email is validated before becoming Reply-To. AWS credentials come exclusively from the Amplify SSR compute role/default SDK provider chain. Safe delivery classifications are written to Amplify compute logs, while the browser receives one generic retryable error. `npm run test:ses` is a deliberate local diagnostic that sends one real minimal message through the same provider; it is never exposed publicly.

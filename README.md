@@ -2,7 +2,7 @@
 
 Phase 1 of `cheesewiththat.com`: Mihir’s personal brand, professional portfolio, consulting, training, photography and future commerce platform.
 
-Current release: **v0.1.3 — Map & Engagement Flow Fixes**.
+Current release: **v0.1.4 — Enquiry Email Delivery Fix**.
 
 ## Run locally
 
@@ -43,5 +43,7 @@ Direction Check, Expert Session, Working Session and Idea Lab proceed from revie
 The interactive map requires both `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` at build time. Without either—or if Google fails—the filters and accessible location list remain available with a polished fallback panel. Public environment-variable changes in Amplify require a new deployment.
 
 Local email delivery requires `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL`, `SES_REGION`, and AWS credentials supplied through the default SDK credential chain. `SES_REGION` is application configuration and avoids Amplify’s reserved `AWS` prefix. Never prefix email settings or credentials with `NEXT_PUBLIC_`.
+
+Amplify’s build writes only the allow-listed server and `NEXT_PUBLIC_` integration variables to `.env.production`, validates the three required email settings and pins SES to the Mumbai region (`ap-south-1`). Failed deliveries emit safe structured diagnostics to the Amplify SSR compute logs. To send one deliberate provider test using the same server configuration, run `npm run test:ses`; this sends a real diagnostic email to the configured recipient.
 
 See [architecture](docs/architecture.md), [content guide](docs/content-guide.md), [media workflow](docs/media.md), [integrations](docs/integrations.md), [deployment](docs/deployment.md), and [implementation plan](docs/implementation-plan.md).

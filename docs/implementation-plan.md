@@ -1,5 +1,23 @@
 # Phase 1 implementation plan
 
+## v0.1.4 — Enquiry Email Delivery Fix
+
+- Removed the duplicated retry reassurance from the reusable enquiry failure panel while retaining one accessible live-region message, preserved values, Back and edit, and Try again.
+- Added synchronous client submission locks to prevent concurrent retries in both reusable and engagement enquiry forms without changing direct Calendly booking behavior.
+- Added an Amplify build step that persists only the explicit email and required public integration variable allow-list to `.env.production`, requires all three server email settings and rejects any SES region other than `ap-south-1`.
+- Kept SES v2 entirely server-side with fixed environment-derived From/To, validated visitor Reply-To, region-only client construction and the AWS SDK default credential provider chain.
+- Added safe classified server diagnostics and a local-only `npm run test:ses` provider utility; neither exposes form content, addresses, credentials or provider stacks.
+- Added regression coverage for the exact production error UI, retained submissions, concurrency, configuration, region, provider failures, safe responses and routing-address protection. Calendly workflow regression coverage remains unchanged.
+
+### Verification
+
+- `npm run format:check` — passed.
+- `npm run lint` — passed with no warnings or errors; Next.js reports its upstream command deprecation notice.
+- `npm run typecheck` — passed.
+- `npm test` — passed: 7 files and 77 tests.
+- `npm run build` — passed with Next.js 15.5.7; all 28 pages generated and `/api/forms/submit` confirmed as a dynamic server route.
+- The Amplify environment writer was exercised with synthetic values and copied only the four configured allow-listed variables, excluding an unrelated value.
+
 ## v0.1.3 — Map & Engagement Flow Fixes
 
 ### Final workflow classification

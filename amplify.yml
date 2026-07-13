@@ -6,6 +6,7 @@ frontend:
         - npm ci
     build:
       commands:
+        - node scripts/write-amplify-env.mjs
         - npm run build
   artifacts:
     baseDirectory: .next
