@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Cheesewiththat</title>
+  <desc id="description">The Cheesewiththat black M and yellow cheese mark on a warm cream background.</desc>
+  <rect width="1200" height="630" fill="#f8f2e5" />
+  <g transform="translate(360 75) scale(.9375)">
+    <path
+      fill="#111111"
+      d="M64 88h116l76 184 76-184h116v26c-24 3-36 20-36 46v196c0 27 12 42 36 46v22H296v-22c24-4 36-19 36-46V190l-62 154h-38l-68-154v166c0 27 14 42 38 46v22H64v-22c24-4 36-19 36-46V160c0-26-12-43-36-46V88Z"
+    />
+    <path
+      fill="#f2b521"
+      d="M276 424c6-70 34-124 84-157-2-27 13-48 38-52 27-5 50 15 51 43v166H276Z"
+    />
+    <circle cx="390" cy="318" r="25" fill="#f8f2e5" />
+    <circle cx="344" cy="374" r="15" fill="#f8f2e5" />
+  </g>
+</svg>
