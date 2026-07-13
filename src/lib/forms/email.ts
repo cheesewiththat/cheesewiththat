@@ -27,8 +27,7 @@ export function getEmailConfiguration(
 ) {
   const to = environment.FORM_NOTIFICATION_TO_EMAIL?.trim();
   const from = environment.FORM_NOTIFICATION_FROM_EMAIL?.trim();
-  const region =
-    environment.AWS_SES_REGION?.trim() || environment.AWS_REGION?.trim();
+  const region = environment.SES_REGION?.trim();
   if (!to || !from || !region)
     throw new Error("Email delivery is not configured");
   if (

@@ -18,7 +18,7 @@ Typed collections cover profile roles, expertise, work, services, training, enga
 
 `src/lib/adapters/providers.ts` retains the future server-side scheduling, payment, commerce and map contracts. Calendly’s public browser integration is implemented separately through `src/lib/calendly.ts` and `src/components/calendly/CalendlyEmbed.tsx`.
 
-Public form delivery uses the Node.js Route Handler at `POST /api/forms/submit`. `src/lib/forms/validation.ts` normalizes and validates the allow-listed form types; `email.ts` creates escaped HTML and plain-text notifications; `service.ts` handles successful-send deduplication; and the SES v2 adapter uses the AWS SDK default credential provider chain. Sender and recipient are read only from server environment variables. The visitor’s validated address is Reply-To. No form is persisted by the application.
+Public form delivery uses the Node.js Route Handler at `POST /api/forms/submit`. `src/lib/forms/validation.ts` normalizes and validates the allow-listed form types; `email.ts` creates escaped HTML and plain-text notifications; `service.ts` handles successful-send deduplication; and the SES v2 adapter uses the AWS SDK default credential provider chain. Sender, recipient and the application-specific `SES_REGION` are read only from server environment variables. `SES_REGION` deliberately avoids Amplify’s reserved `AWS` prefix and does not fall back to AWS SDK environment variables. The visitor’s validated address is Reply-To. No form is persisted by the application.
 
 Future integrations: durable rate limiting/deduplication, payment, print fulfilment, newsletter, CMS, secure CV file delivery, accounts, conversational assistant, guided visitor modes, dynamic CV generation, and consent-aware analytics.
 
