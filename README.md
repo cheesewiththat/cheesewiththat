@@ -40,6 +40,6 @@ npm run build
 
 Calendly booking is active when its public event URLs are configured. Public forms submit through `/api/forms/submit` and Amazon SES when the server-only notification addresses, SES region, verified sender identity and AWS credentials are configured. Payment, checkout and fulfilment remain inactive. Do not add secrets to the repository; use Amplify environment variables and IAM roles.
 
-Local email delivery requires `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL`, `AWS_SES_REGION`, and AWS credentials supplied through the default SDK credential chain. Never prefix email settings or credentials with `NEXT_PUBLIC_`.
+Local email delivery requires `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL`, `SES_REGION`, and AWS credentials supplied through the default SDK credential chain. `SES_REGION` is application configuration and avoids Amplify’s reserved `AWS` prefix. Never prefix email settings or credentials with `NEXT_PUBLIC_`.
 
 See [architecture](docs/architecture.md), [content guide](docs/content-guide.md), [media workflow](docs/media.md), [integrations](docs/integrations.md), [deployment](docs/deployment.md), and [implementation plan](docs/implementation-plan.md).

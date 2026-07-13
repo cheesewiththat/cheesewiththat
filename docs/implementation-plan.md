@@ -22,7 +22,7 @@
 ### Production configuration
 
 - Required public scheduling configuration: `NEXT_PUBLIC_CALENDLY_15_URL`, `NEXT_PUBLIC_CALENDLY_30_URL`, `NEXT_PUBLIC_CALENDLY_60_URL`, `NEXT_PUBLIC_CALENDLY_90_URL` and `NEXT_PUBLIC_CALENDLY_FALLBACK_URL`.
-- Required server-only email configuration: `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL` and `AWS_SES_REGION`. Runtime AWS credentials must come from Amplify’s IAM role/default credential chain, never browser variables.
+- Required server-only email configuration: `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL` and `SES_REGION`. The application-specific region name avoids Amplify’s reserved `AWS` prefix and does not fall back to AWS SDK region variables. Runtime AWS credentials must come from Amplify’s IAM role/default credential chain, never browser variables.
 - Optional public configuration with local fallback: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` and `NEXT_PUBLIC_MEDIA_BASE_URL`.
 - `NEXT_PUBLIC_SITE_URL` may remain unset because the application defaults to the canonical `https://cheesewiththat.com` origin.
 - Dedicated training, consulting, career and speaking Calendly variables are not implemented; those workflows intentionally use the central 30-minute event mapping for this release.

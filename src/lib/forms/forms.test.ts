@@ -180,9 +180,19 @@ describe("SES notification construction", () => {
       getEmailConfiguration({
         FORM_NOTIFICATION_TO_EMAIL: configuration.to,
         FORM_NOTIFICATION_FROM_EMAIL: configuration.from,
-        AWS_SES_REGION: configuration.region,
+        SES_REGION: configuration.region,
       }),
     ).toEqual(configuration);
+  });
+  it("does not use reserved AWS-prefixed variables as an application fallback", () => {
+    expect(() =>
+      getEmailConfiguration({
+        FORM_NOTIFICATION_TO_EMAIL: configuration.to,
+        FORM_NOTIFICATION_FROM_EMAIL: configuration.from,
+        ["AWS" + "_SES_REGION"]: configuration.region,
+        AWS_REGION: configuration.region,
+      }),
+    ).toThrow("Email delivery is not configured");
   });
   it("escapes HTML and includes HTML, text, submitted fields and unscheduled Calendly status", () => {
     const dangerous = submission("direction", {

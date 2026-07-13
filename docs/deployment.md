@@ -27,10 +27,10 @@ Set these server-only Amplify environment variables:
 ```text
 FORM_NOTIFICATION_TO_EMAIL=mihirsatokar@gmail.com
 FORM_NOTIFICATION_FROM_EMAIL=mihir@cheesewiththat.com
-AWS_SES_REGION=<verified SES region>
+SES_REGION=<verified SES region>
 ```
 
-Do not use `NEXT_PUBLIC_`. Attach a least-privilege IAM role allowing `ses:SendEmail` for the verified Cheesewiththat identity; do not store access keys in Git. Verify `mihir@cheesewiththat.com` or the entire `cheesewiththat.com` domain in the same SES region. While the SES account is in sandbox, delivery is restricted to verified recipients; request production access before accepting public submissions. Confirm SPF, DKIM and DMARC as part of launch readiness.
+Do not use `NEXT_PUBLIC_` or a custom variable with Amplify’s reserved `AWS` prefix. `SES_REGION` is application-specific and server-only. Attach a least-privilege IAM role allowing `ses:SendEmail` for the verified Cheesewiththat identity; do not store access keys in Git. Verify `mihir@cheesewiththat.com` or the entire `cheesewiththat.com` domain in the same SES region. While the SES account is in sandbox, delivery is restricted to verified recipients; request production access before accepting public submissions. Confirm SPF, DKIM and DMARC as part of launch readiness.
 
 The fixed recipient is `mihirsatokar@gmail.com`, the fixed sender is `mihir@cheesewiththat.com`, and Reply-To is the validated visitor email. The browser cannot override sender or recipient. Local development uses the same default AWS credential chain; without a region, verified identity and credentials, the form deliberately shows its retryable failure state.
 
