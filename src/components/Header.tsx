@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { navigation } from "@/content/site";
+import { BrandHomeLink } from "./BrandHomeLink";
 import { CheeseToggle } from "./CheeseToggle";
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -21,13 +22,7 @@ export function Header() {
       className={`site-header sticky top-0 z-50 border-b backdrop-blur transition-colors duration-200 ${scrolled ? "border-brass bg-charcoal text-cream" : "border-ink bg-bone text-ink"}`}
     >
       <div className="mx-auto flex max-w-page items-center justify-between px-5 py-3 lg:px-10">
-        <Link
-          href="/"
-          className="rounded-sm font-serif text-2xl"
-          onClick={() => setOpen(false)}
-        >
-          Cheesewiththat
-        </Link>
+        <BrandHomeLink onClick={() => setOpen(false)} />
         <button
           className={`rounded-full border px-3 py-2 text-sm transition-colors lg:hidden ${scrolled ? "border-cream hover:bg-cream hover:text-ink" : "border-ink hover:bg-ink hover:text-cream"}`}
           aria-expanded={open}
