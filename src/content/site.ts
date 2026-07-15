@@ -1,6 +1,7 @@
 import type {
   Article,
   AboutProfile,
+  CvRequestContent,
   Engagement,
   Expertise,
   ExternalProfile,
@@ -20,6 +21,10 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://cheesewiththat.com",
   description:
     "Mihir builds products, commercialises technology and makes complicated systems useful.",
+};
+export const cvRequest: CvRequestContent = {
+  supportingCopy:
+    "Share a little about the role or opportunity, and I’ll send the most relevant version of my CV.",
 };
 export const externalProfiles: ExternalProfile[] = [
   {

@@ -1,4 +1,7 @@
+"use client";
+
 import { externalProfiles } from "@/content/site";
+import { trackEvent } from "@/lib/analytics";
 
 export function ExternalProfiles({ compact = false }: { compact?: boolean }) {
   const configured = externalProfiles.filter(
@@ -24,6 +27,12 @@ export function ExternalProfiles({ compact = false }: { compact?: boolean }) {
               href={profile.href}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                trackEvent("external_link_clicked", {
+                  link_label: profile.label,
+                  destination_type: profile.id,
+                })
+              }
               className={
                 compact
                   ? "underline decoration-white/30 hover:decoration-white"

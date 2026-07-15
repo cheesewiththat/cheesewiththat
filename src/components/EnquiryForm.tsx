@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from "react";
 import { submitPublicForm } from "@/lib/forms/client";
 import { runWithSubmissionLock } from "@/lib/forms/submission-lock";
 import { enquirySuccessMessage } from "@/lib/workflows";
+import { trackEvent } from "@/lib/analytics";
 
 const labels: Record<string, string> = {
   name: "Name",
@@ -73,6 +74,10 @@ export function EnquiryForm({
         clientSubmissionKey,
       });
       if (result.ok) {
+        trackEvent(
+          kind === "cv" ? "cv_request_submitted" : "enquiry_submitted",
+          { destination_type: kind },
+        );
         setStatus("sent");
         setSubmissionId(result.submissionId);
         window.requestAnimationFrame(() => statusRef.current?.focus());

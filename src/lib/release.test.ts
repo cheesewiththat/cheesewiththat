@@ -9,6 +9,7 @@ import {
   subscribeToCalendlyEvents,
   type CalendlyConfiguration,
 } from "./calendly";
+import { cvRequest, locations } from "@/content/site";
 import { getEngagementWorkflow, intakeSchemas, validateIntake } from "./intake";
 import {
   getMapConfigurationDiagnostic,
@@ -19,7 +20,6 @@ import {
 import { isLocalMediaPath, resolveMediaPath } from "./media";
 import { completeReviewWorkflow, enquirySuccessMessage } from "./workflows";
 import { workflowByType } from "./forms/types";
-import { locations } from "@/content/site";
 
 const calendly: CalendlyConfiguration = {
   fifteen: "https://calendly.com/mihirsatokar/15-minute-meeting",
@@ -31,6 +31,13 @@ const calendly: CalendlyConfiguration = {
 };
 
 describe("v0.1.3 configuration and validation", () => {
+  it("uses public-facing CV request copy without implementation language", () => {
+    expect(cvRequest.supportingCopy).toBe(
+      "Share a little about the role or opportunity, and I’ll send the most relevant version of my CV.",
+    );
+    expect(cvRequest.supportingCopy).not.toContain("Phase 1");
+    expect(cvRequest.supportingCopy).not.toContain("downloadable");
+  });
   it("provides different conditional schemas", () => {
     expect(intakeSchemas.direction.fields.map((field) => field.name)).toContain(
       "question",

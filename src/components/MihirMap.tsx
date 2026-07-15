@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { locations } from "@/content/site";
-import type { LocationCategory } from "@/content/types";
+import type { Location, LocationCategory } from "@/content/types";
+import { trackEvent } from "@/lib/analytics";
 import {
   getMapConfigurationDiagnostic,
   getVisibleMapLocations,
@@ -112,6 +113,13 @@ export function MihirMap() {
   );
   const selected =
     visible.find((location) => location.id === selectedId) ?? visible[0];
+  const selectLocation = useCallback((location: Location) => {
+    setSelectedId(location.id);
+    trackEvent("map_location_selected", {
+      location_name: location.name,
+      location_category: location.category,
+    });
+  }, []);
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -173,9 +181,7 @@ export function MihirMap() {
             content: pin,
             gmpClickable: true,
           });
-          marker.addEventListener("gmp-click", () =>
-            setSelectedId(location.id),
-          );
+          marker.addEventListener("gmp-click", () => selectLocation(location));
           bounds.extend({ lat, lng });
         });
         if (visible.length) map.fitBounds(bounds);
@@ -201,9 +207,14 @@ export function MihirMap() {
     return () => {
       cancelled = true;
     };
-  }, [invalidLocationCount, visible]);
+  }, [invalidLocationCount, selectLocation, visible]);
 
   function toggleCategory(category: LocationCategory) {
+    const enabling = !activeCategories.includes(category);
+    trackEvent("map_filter_changed", {
+      filter_value: enabling ? "enabled" : "disabled",
+      location_category: category,
+    });
     setActiveCategories((current) =>
       current.includes(category)
         ? current.filter((item) => item !== category)
@@ -349,7 +360,7 @@ export function MihirMap() {
                         <button
                           key={location.id}
                           type="button"
-                          onClick={() => setSelectedId(location.id)}
+                          onClick={() => selectLocation(location)}
                           aria-pressed={selected?.id === location.id}
                           aria-label={`${location.name}, ${locationCategoryLabels[location.category]}`}
                           className={`w-full rounded-xl border p-3 text-left ${selected?.id === location.id ? "border-cobalt bg-cobalt text-white" : "border-ink/20 bg-cream"}`}

@@ -6,6 +6,14 @@ Set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` in Am
 
 Location data remains typed and approximate. Import preparation lives at `docs/templates/locations-template.csv`; use pipe-delimited categories when a city has more than one. Do not import private addresses, real-time locations or private itineraries.
 
+## Google Analytics 4
+
+Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` in Amplify for the production app. The build helper writes the ID plus an internal public enable flag only when Amplify supplies an app ID, identifies the branch as `main`, and supplies no pull-request ID. It strips analytics from local builds, tests, pull-request previews and every non-production branch even if the measurement ID is inherited there. Do not configure the generated `NEXT_PUBLIC_GA_ENABLED` flag manually.
+
+`SiteAnalytics` renders the official `@next/third-parties` Google Analytics component once in the root layout only when both production values were generated and the browser hostname is exactly `cheesewiththat.com` or `www.cheesewiththat.com`. The hostname check is a second guard against preview or local tracking. GA Enhanced Measurement must have browser-history page-view tracking enabled so App Router client navigation is measured without duplicate manual page-view events.
+
+The typed client helper in `src/lib/analytics.ts` emits only allow-listed, non-sensitive parameters for successful enquiries, CV requests, Calendly scheduling actions, external links and map interactions. Analytics being absent, blocked or failing never interrupts those actions. No cookie-consent manager currently exists; review consent and privacy treatment before broader campaigns or audience activation.
+
 ## Calendly
 
 Configure the four exact event URLs and the general fallback URL using the variables in `.env.example`. The mapping is centralized in `src/lib/calendly.ts`:

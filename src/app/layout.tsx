@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { site } from "@/content/site";
 import { brandAssets } from "@/lib/brand-assets";
 export const metadata: Metadata = {
@@ -87,6 +88,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </body>
+      <SiteAnalytics />
     </html>
   );
 }

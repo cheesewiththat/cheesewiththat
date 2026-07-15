@@ -6,6 +6,7 @@ import { buildCalendlyUrl } from "@/lib/calendly";
 import { CalendlyEmbed } from "@/components/calendly/CalendlyEmbed";
 import { submitPublicForm } from "@/lib/forms/client";
 import { runWithSubmissionLock } from "@/lib/forms/submission-lock";
+import { trackEvent } from "@/lib/analytics";
 import { completeReviewWorkflow, enquirySuccessMessage } from "@/lib/workflows";
 import {
   type EngagementKind,
@@ -86,10 +87,12 @@ export function BookingFlow({ fixedKind }: { fixedKind?: EngagementKind }) {
       : await runWithSubmissionLock(emailSubmissionLock, complete);
     if (!result) return;
     if (result.destination === "calendly") {
+      trackEvent("calendly_clicked", { destination_type: kind });
       setStep(4);
       return;
     }
     if (result.destination === "sent") {
+      trackEvent("enquiry_submitted", { destination_type: kind });
       setSubmissionId(result.submissionId);
       setEmailStatus("sent");
       setStep(4);
