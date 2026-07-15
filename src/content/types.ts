@@ -4,6 +4,8 @@ export type ExternalProfile = {
     | "linkedin"
     | "facebook"
     | "x"
+    | "instagram"
+    | "github"
     | "current-work"
     | "previous-blog"
     | "zero-one-products";
@@ -52,33 +54,27 @@ export type Training = {
   durations: string[];
   modes: string[];
 };
-export type LocationCategory =
-  | "Lived"
-  | "Worked"
-  | "Visited"
-  | "Client work"
-  | "Events and conferences"
-  | "Photographed"
-  | "Want to visit";
+export type LocationCategory = "lived" | "travelled";
+export type LocationChapter = {
+  label: string;
+  approximateDuration: string;
+  context: string;
+  sequence: number;
+};
 export type Location = {
   id: string;
-  city: string;
+  name: string;
   country: string;
+  region?: string;
   coordinates: [number, number];
-  categories: LocationCategory[];
-  period: string;
-  from?: string;
-  to?: string;
-  reason: string;
-  story: string;
-  contextType: "work" | "personal" | "both";
-  relatedOrganisation?: string;
-  relatedEvent?: string;
-  relatedPhotos: string[];
-  relatedProjects: string[];
-  relatedArticles: string[];
-  public: boolean;
-  position: [number, number];
+  category: LocationCategory;
+  sequence?: number;
+  approximateDuration?: string;
+  context: string;
+  chapters: LocationChapter[];
+  current: boolean;
+  publicationStatus: "public" | "draft";
+  verified: boolean;
 };
 export type Photograph = {
   id: string;

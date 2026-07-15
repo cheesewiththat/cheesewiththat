@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   loadGoogleMaps,
+  markerStyles,
   MihirMap,
   resetGoogleMapsLoaderForTests,
 } from "./MihirMap";
@@ -21,7 +22,23 @@ describe("Mihir Map fallback", () => {
     expect(html).toContain("Map preview");
     expect(html).toContain("h-[28rem]");
     expect(html).toContain('aria-label="Locations"');
-    expect(html).toContain(locations[0].city);
+    expect(html).toContain(locations[0].name);
+    expect(html).toContain("Places lived");
+    expect(html).toContain("Places travelled");
+    expect(html).toContain("Birth and first home");
+    expect(html).toContain("Current home");
+    expect(html).toContain("Scroll to explore all 25 places");
+    expect(html).toContain('aria-label="Confirmed places list"');
+    expect(html).toContain('tabindex="0"');
+  });
+
+  it("uses a more prominent lived marker than travelled marker", () => {
+    expect(markerStyles.lived.size).toBeGreaterThan(
+      markerStyles.travelled.size,
+    );
+    expect(markerStyles.lived.borderWidth).toBeGreaterThan(
+      markerStyles.travelled.borderWidth,
+    );
   });
 });
 
