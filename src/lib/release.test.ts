@@ -88,10 +88,10 @@ describe("v0.1.3 configuration and validation", () => {
   it("filters hidden, invalid and inactive map markers before fitting", () => {
     const records = [
       locations[0],
-      { ...locations[1], public: false },
+      { ...locations[1], publicationStatus: "draft" as const },
       { ...locations[2], coordinates: [Number.NaN, 0] as [number, number] },
     ];
-    const visible = getVisibleMapLocations(records, locations[0].categories);
+    const visible = getVisibleMapLocations(records, [locations[0].category]);
     expect(visible).toEqual([locations[0]]);
   });
   it("resolves local and allow-listed remote media paths", () => {
@@ -108,6 +108,71 @@ describe("v0.1.3 configuration and validation", () => {
     expect(
       resolveMediaPath("photography/a.jpg", "http://unsafe.example.com"),
     ).toBe("photography/a.jpg");
+  });
+});
+
+describe("confirmed Places content", () => {
+  it("keeps lived and travelled places separate", () => {
+    expect(
+      locations.filter((location) => location.category === "lived"),
+    ).toHaveLength(9);
+    expect(
+      locations.filter((location) => location.category === "travelled"),
+    ).toHaveLength(16);
+  });
+
+  it("models repeated Nagpur and Delhi chapters on single city records", () => {
+    const nagpur = locations.find((location) => location.id === "nagpur");
+    const delhi = locations.find((location) => location.id === "delhi");
+    expect(
+      locations.filter((location) => location.name === "Nagpur"),
+    ).toHaveLength(1);
+    expect(
+      locations.filter((location) => location.name === "Delhi"),
+    ).toHaveLength(1);
+    expect(nagpur?.chapters.map((chapter) => chapter.sequence)).toEqual([
+      1, 4, 7,
+    ]);
+    expect(delhi?.chapters.map((chapter) => chapter.sequence)).toEqual([
+      2, 6, 10,
+    ]);
+  });
+
+  it("marks Wangaratta as the current city-level home", () => {
+    const currentHomes = locations.filter((location) => location.current);
+    expect(currentHomes).toHaveLength(1);
+    expect(currentHomes[0]).toMatchObject({
+      id: "wangaratta",
+      name: "Wangaratta",
+      category: "lived",
+      region: "Victoria",
+    });
+  });
+
+  it("represents Washington specifically as Washington, D.C.", () => {
+    const washington = locations.find(
+      (location) => location.id === "washington-dc",
+    );
+    expect(washington).toMatchObject({
+      name: "Washington, D.C.",
+      country: "United States",
+      region: "District of Columbia",
+      category: "travelled",
+    });
+    expect(washington?.region).not.toContain("Washington state");
+  });
+
+  it("does not attach invented stories or chapters to travel places", () => {
+    const travelled = locations.filter(
+      (location) => location.category === "travelled",
+    );
+    expect(
+      travelled.every(
+        (location) =>
+          location.context === "Confirmed travel location." &&
+          location.chapters.length === 0,
+      ),
+    ).toBe(true);
   });
 });
 

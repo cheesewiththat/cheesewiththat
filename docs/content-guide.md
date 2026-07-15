@@ -4,6 +4,8 @@ Edit structured content in `src/content/site.ts`; add or extend types in `src/co
 
 External profiles also live in this collection. Keep an unknown URL unconfigured rather than guessing it; only entries with `configured: true` and a supplied URL are rendered.
 
+Places also live in `src/content/site.ts`. Use one record per mapped place and classify it as `lived` or `travelled`. A city revisited across life stages keeps one city-level marker and stores each confirmed period in its ordered `chapters`; do not create overlapping markers or infer calendar years. Durations remain human-readable approximations. Set `current` only at city level and never add an address or live position. Travel records should remain factual when no context beyond the confirmed destination is available.
+
 Engagement questions live in `src/lib/intake.ts`. Calendly mapping lives in `src/lib/calendly.ts`; never put event URLs into page components. Only add fields to the concise prefill allow-list when they are appropriate to place in a third-party URL. Full intake responses remain local until a delivery backend is deliberately implemented.
 
 ## Editorial rules

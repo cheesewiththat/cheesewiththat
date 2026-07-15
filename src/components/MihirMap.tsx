@@ -8,6 +8,7 @@ import {
   getVisibleMapLocations,
   hasValidCoordinates,
   locationCategories,
+  locationCategoryLabels,
   type MapDiagnostic,
 } from "@/lib/locations";
 
@@ -69,21 +70,21 @@ export function resetGoogleMapsLoaderForTests() {
   googleMapsPromise = undefined;
 }
 
-const markerColours: Record<LocationCategory, string> = {
-  Lived: "#FF5A36",
-  Worked: "#315CFF",
-  Visited: "#C3A46B",
-  "Client work": "#653C78",
-  "Events and conferences": "#C7F43D",
-  Photographed: "#087F78",
-  "Want to visit": "#E10600",
+export const markerStyles: Record<
+  LocationCategory,
+  { colour: string; size: number; borderWidth: number }
+> = {
+  lived: { colour: "#FF5A36", size: 32, borderWidth: 4 },
+  travelled: { colour: "#C3A46B", size: 18, borderWidth: 3 },
 };
 
 export function MihirMap() {
   const invalidLocationCount = useMemo(
     () =>
       locations.filter(
-        (location) => location.public && !hasValidCoordinates(location),
+        (location) =>
+          location.publicationStatus === "public" &&
+          !hasValidCoordinates(location),
       ).length,
     [],
   );
@@ -150,19 +151,25 @@ export function MihirMap() {
         const bounds = new mapsRuntime.LatLngBounds();
         visible.forEach((location) => {
           const [lat, lng] = location.coordinates;
+          const markerStyle = markerStyles[location.category];
           const pin = document.createElement("button");
           pin.type = "button";
-          pin.className =
-            "h-7 w-7 rounded-full border-4 border-white shadow-lg";
-          pin.style.background = markerColours[location.categories[0]];
+          pin.className = "rounded-full border-white shadow-lg";
+          pin.dataset.placeCategory = location.category;
+          pin.style.width = `${markerStyle.size}px`;
+          pin.style.height = `${markerStyle.size}px`;
+          pin.style.borderWidth = `${markerStyle.borderWidth}px`;
+          pin.style.background = markerStyle.colour;
+          if (location.current)
+            pin.style.boxShadow = "0 0 0 4px #C7F43D, 0 8px 18px #11111133";
           pin.setAttribute(
             "aria-label",
-            `${location.city}, ${location.country}`,
+            `${location.name}, ${location.country}, ${locationCategoryLabels[location.category]}${location.current ? ", current home" : ""}`,
           );
           const marker = new AdvancedMarker({
             map,
             position: { lat, lng },
-            title: `${location.city}, ${location.country}`,
+            title: `${location.name}, ${location.country}`,
             content: pin,
             gmpClickable: true,
           });
@@ -219,11 +226,15 @@ export function MihirMap() {
                 className={`rounded-full border px-3 py-2 text-xs ${activeCategories.includes(category) ? "bg-ink text-cream" : "bg-transparent"}`}
               >
                 <span
-                  className="mr-2 inline-block h-2 w-2 rounded-full"
-                  style={{ background: markerColours[category] }}
+                  className="mr-2 inline-block rounded-full"
+                  style={{
+                    width: `${Math.max(markerStyles[category].size / 2.5, 8)}px`,
+                    height: `${Math.max(markerStyles[category].size / 2.5, 8)}px`,
+                    background: markerStyles[category].colour,
+                  }}
                   aria-hidden
                 />
-                {category}
+                {locationCategoryLabels[category]}
               </button>
             ))}
           </div>
@@ -232,7 +243,7 @@ export function MihirMap() {
           <div
             ref={mapElement}
             className={`absolute inset-0 ${status === "ready" ? "block" : "hidden"}`}
-            aria-label="Google map of public locations"
+            aria-label="Google map of confirmed places"
           />
           {status !== "ready" && (
             <div className="absolute inset-0 grid place-items-center p-7 text-center text-cream">
@@ -245,12 +256,12 @@ export function MihirMap() {
                       : "Map preview"}
                 </p>
                 <h2 className="mt-4 font-serif text-4xl">
-                  The stories still work without Google.
+                  The places remain visible without Google.
                 </h2>
                 <p className="text-cream/80 mt-4 text-sm">
                   {status === "fallback"
-                    ? "Configure the Google Maps API key and Map ID to enable the interactive map. The accessible city list remains available now."
-                    : "Use the city list while the map is unavailable."}
+                    ? "Configure the Google Maps API key and Map ID to enable the interactive map. The accessible place list remains available now."
+                    : "Use the place list while the map is unavailable."}
                 </p>
                 {process.env.NODE_ENV === "development" && diagnostic && (
                   <p className="mt-4 font-mono text-xs" role="status">
@@ -263,38 +274,120 @@ export function MihirMap() {
         </div>
       </div>
       <aside aria-label="Locations" className="min-w-0">
-        <p className="eyebrow mb-4">{visible.length} public locations</p>
-        {visible.length ? (
-          <div className="space-y-2">
-            {visible.map((location) => (
-              <button
-                key={location.id}
-                type="button"
-                onClick={() => setSelectedId(location.id)}
-                aria-pressed={selected?.id === location.id}
-                className={`w-full rounded-xl border p-4 text-left ${selected?.id === location.id ? "border-cobalt bg-cobalt text-white" : "border-ink/20"}`}
-              >
-                <span className="eyebrow">
-                  {location.country} · {location.period}
-                </span>
-                <span className="mt-2 block font-serif text-3xl">
-                  {location.city}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="card p-5">No public locations match those filters.</p>
-        )}
+        <p className="eyebrow mb-4">{visible.length} confirmed places</p>
         {selected && (
-          <article className="card mt-4 bg-cream p-5" aria-live="polite">
+          <article className="card bg-cream p-5" aria-live="polite">
             <p className="eyebrow">
-              {selected.contextType} · {selected.categories.join(" · ")}
+              {locationCategoryLabels[selected.category]} · {selected.country}
+              {selected.region ? ` · ${selected.region}` : ""}
             </p>
-            <h2 className="mt-3 font-serif text-4xl">{selected.city}</h2>
-            <p className="mt-3 font-semibold">{selected.reason}</p>
-            <p className="mt-3 text-sm leading-relaxed">{selected.story}</p>
+            <h2 className="mt-3 font-serif text-4xl">{selected.name}</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {selected.approximateDuration && (
+                <span className="border-ink/25 rounded-full border px-3 py-1 font-mono text-xs">
+                  {selected.approximateDuration}
+                </span>
+              )}
+              {selected.current && (
+                <span className="rounded-full bg-chartreuse px-3 py-1 font-mono text-xs text-ink">
+                  Current home
+                </span>
+              )}
+            </div>
+            <p className="mt-4 text-sm leading-relaxed">{selected.context}</p>
+            {selected.chapters.length > 1 && (
+              <ol className="border-ink/15 mt-5 space-y-3 border-t pt-4">
+                {[...selected.chapters]
+                  .sort((first, second) => first.sequence - second.sequence)
+                  .map((chapter) => (
+                    <li key={`${selected.id}-${chapter.sequence}`}>
+                      <p className="font-semibold">{chapter.label}</p>
+                      <p className="mt-1 font-mono text-xs">
+                        {chapter.approximateDuration}
+                      </p>
+                      <p className="mt-1 text-sm">{chapter.context}</p>
+                    </li>
+                  ))}
+              </ol>
+            )}
           </article>
+        )}
+        {visible.length ? (
+          <>
+            <p
+              id="places-scroll-note"
+              className="text-ink/70 mt-4 font-mono text-xs"
+            >
+              Scroll to explore all {visible.length} places.
+            </p>
+            <div
+              role="region"
+              aria-label="Confirmed places list"
+              aria-describedby="places-scroll-note"
+              tabIndex={0}
+              className="mt-2 max-h-[34rem] space-y-5 overflow-y-auto rounded-sm pr-1"
+            >
+              {locationCategories.map((category) => {
+                const categoryLocations = visible.filter(
+                  (location) => location.category === category,
+                );
+                if (!categoryLocations.length) return null;
+                return (
+                  <section
+                    key={category}
+                    aria-labelledby={`places-${category}`}
+                  >
+                    <h2
+                      id={`places-${category}`}
+                      className="eyebrow sticky top-0 z-10 bg-bone py-2"
+                    >
+                      {locationCategoryLabels[category]} ·{" "}
+                      {categoryLocations.length}
+                    </h2>
+                    <div className="space-y-2">
+                      {categoryLocations.map((location) => (
+                        <button
+                          key={location.id}
+                          type="button"
+                          onClick={() => setSelectedId(location.id)}
+                          aria-pressed={selected?.id === location.id}
+                          aria-label={`${location.name}, ${locationCategoryLabels[location.category]}`}
+                          className={`w-full rounded-xl border p-3 text-left ${selected?.id === location.id ? "border-cobalt bg-cobalt text-white" : "border-ink/20 bg-cream"}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="inline-block shrink-0 rounded-full border-2 border-current"
+                              style={{
+                                width: `${Math.max(markerStyles[location.category].size / 2, 10)}px`,
+                                height: `${Math.max(markerStyles[location.category].size / 2, 10)}px`,
+                                background:
+                                  markerStyles[location.category].colour,
+                              }}
+                              aria-hidden
+                            />
+                            <span>
+                              <span className="block font-serif text-2xl">
+                                {location.name}
+                              </span>
+                              <span className="mt-1 block text-xs">
+                                {location.region ? `${location.region}, ` : ""}
+                                {location.country}
+                                {location.current ? " · Current home" : ""}
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <p className="card mt-4 p-5">
+            No confirmed places match those filters.
+          </p>
         )}
       </aside>
     </div>
