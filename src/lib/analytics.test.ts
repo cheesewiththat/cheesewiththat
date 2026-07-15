@@ -8,19 +8,49 @@ import {
 afterEach(() => {
   resetAnalyticsForTests();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
+
+function enableProductionAnalytics() {
+  vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-1G3R8K61VF");
+  vi.stubEnv("NEXT_PUBLIC_GA_ENABLED", "true");
+}
 
 describe("analytics events", () => {
   it("does nothing when Google Analytics is unavailable", () => {
-    vi.stubGlobal("window", { location: { pathname: "/engage/cv" } });
+    enableProductionAnalytics();
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "cheesewiththat.com",
+        pathname: "/engage/cv",
+      },
+    });
     expect(() => trackEvent("cv_request_submitted")).not.toThrow();
   });
 
+  it.each(["localhost", "pr-7.example.amplifyapp.com"])(
+    "does not emit events on non-production host %s",
+    (hostname) => {
+      enableProductionAnalytics();
+      const gtag = vi.fn();
+      vi.stubGlobal("window", {
+        gtag,
+        location: { hostname, pathname: "/map" },
+      });
+      trackEvent("map_location_selected", {
+        location_name: "Nagpur",
+        location_category: "lived",
+      });
+      expect(gtag).not.toHaveBeenCalled();
+    },
+  );
+
   it("sends only allow-listed non-sensitive parameters", () => {
+    enableProductionAnalytics();
     const gtag = vi.fn();
     vi.stubGlobal("window", {
       gtag,
-      location: { pathname: "/mihir" },
+      location: { hostname: "cheesewiththat.com", pathname: "/mihir" },
     });
     const parameters = {
       link_label: "LinkedIn",
@@ -39,10 +69,11 @@ describe("analytics events", () => {
   });
 
   it("suppresses an immediate duplicate without blocking later actions", () => {
+    enableProductionAnalytics();
     const gtag = vi.fn();
     vi.stubGlobal("window", {
       gtag,
-      location: { pathname: "/map" },
+      location: { hostname: "cheesewiththat.com", pathname: "/map" },
     });
 
     trackEvent("map_location_selected", {
@@ -58,11 +89,12 @@ describe("analytics events", () => {
   });
 
   it("swallows provider failures", () => {
+    enableProductionAnalytics();
     vi.stubGlobal("window", {
       gtag: () => {
         throw new Error("blocked");
       },
-      location: { pathname: "/map" },
+      location: { hostname: "cheesewiththat.com", pathname: "/map" },
     });
     expect(() =>
       trackEvent("map_filter_changed", {

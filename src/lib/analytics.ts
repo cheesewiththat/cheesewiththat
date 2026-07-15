@@ -1,5 +1,7 @@
 "use client";
 
+import { getBrowserProductionAnalyticsId } from "./analytics-config";
+
 export type AnalyticsEventName =
   | "cv_request_submitted"
   | "enquiry_submitted"
@@ -47,6 +49,7 @@ export function trackEvent(
 ) {
   if (typeof window === "undefined" || typeof window.gtag !== "function")
     return;
+  if (!getBrowserProductionAnalyticsId()) return;
 
   const safeParameters = Object.fromEntries(
     Object.entries(parameters).filter(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getProductionAnalyticsId } from "./SiteAnalytics";
+import { getProductionAnalyticsId } from "@/lib/analytics-config";
 
 describe("production analytics configuration", () => {
   it.each(["cheesewiththat.com", "www.cheesewiththat.com"])(

@@ -2,26 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
-
-const productionHosts = new Set([
-  "cheesewiththat.com",
-  "www.cheesewiththat.com",
-]);
-
-export function getProductionAnalyticsId({
-  measurementId,
-  enabled,
-  hostname,
-}: {
-  measurementId?: string;
-  enabled: boolean;
-  hostname: string;
-}) {
-  const configuredId = measurementId?.trim();
-  return enabled && configuredId && productionHosts.has(hostname)
-    ? configuredId
-    : undefined;
-}
+import { getProductionAnalyticsId } from "@/lib/analytics-config";
 
 export function SiteAnalytics({
   measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
