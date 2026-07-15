@@ -6,6 +6,7 @@ import {
   isBookingCompletion,
   subscribeToCalendlyEvents,
 } from "@/lib/calendly";
+import { trackEvent } from "@/lib/analytics";
 
 const scriptUrl = "https://assets.calendly.com/assets/external/widget.js";
 
@@ -169,6 +170,11 @@ export function CalendlyEmbed({
             href={url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("calendly_clicked", {
+                destination_type: "fallback_link",
+              })
+            }
           >
             Open Calendly <span aria-hidden>↗</span>
             <span className="sr-only"> (opens in a new tab)</span>

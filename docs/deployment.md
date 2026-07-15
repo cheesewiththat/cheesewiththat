@@ -18,6 +18,18 @@ NEXT_PUBLIC_SITE_URL=https://cheesewiththat.com
 
 Optional public integration configuration is documented in `.env.example` and `docs/integrations.md`. Restrict the Google browser key by domain and API. `NEXT_PUBLIC_MEDIA_BASE_URL` must be the single HTTPS web-media origin/path prefix; AWS credentials and private originals remain server-side and outside the site.
 
+## Google Analytics 4
+
+Set this public variable in Amplify:
+
+```text
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-1G3R8K61VF
+```
+
+The value is embedded only when Amplify identifies the build as the `main` production branch and no pull-request ID is present. `scripts/write-amplify-env.mjs` deliberately omits both the ID and its generated enable flag from pull-request previews, preview branches, non-production branches, tests and local production builds. Never configure `NEXT_PUBLIC_GA_ENABLED` manually. Adding or changing the measurement ID requires a new production build and deployment. Confirm GA Enhanced Measurement includes page changes based on browser history events. No consent manager currently gates production analytics, so review consent and privacy treatment before broader campaigns.
+
+Amplify pull-request previews must remain analytics-free. When web previews are enabled for `main`, opening the PR triggers a unique preview deployment; verify its HTML contains no `googletagmanager.com` request before merge.
+
 ## Google Maps
 
 Set both public variables in Amplify before the build that should enable the interactive map:
@@ -55,4 +67,4 @@ Attach `cheesewiththat.com` in Amplify and follow its generated DNS validation/t
 
 ## Pre-production checklist
 
-Run lint, type checking, tests and production build; verify preview deployment keyboard navigation and responsive layouts; replace sample content; connect production form delivery with server validation and rate limiting; review privacy and terms; and configure consent before analytics.
+Run lint, type checking, tests and production build; verify preview deployment keyboard navigation and responsive layouts; replace sample content; connect production form delivery with server validation and rate limiting; review privacy and terms; and review analytics consent before broader campaigns.

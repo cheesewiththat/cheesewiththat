@@ -64,6 +64,7 @@
 - Required public scheduling configuration: `NEXT_PUBLIC_CALENDLY_15_URL`, `NEXT_PUBLIC_CALENDLY_30_URL`, `NEXT_PUBLIC_CALENDLY_60_URL`, `NEXT_PUBLIC_CALENDLY_90_URL` and `NEXT_PUBLIC_CALENDLY_FALLBACK_URL`.
 - Required server-only email configuration: `FORM_NOTIFICATION_TO_EMAIL`, `FORM_NOTIFICATION_FROM_EMAIL` and `SES_REGION`. The application-specific region name avoids Amplify’s reserved `AWS` prefix and does not fall back to AWS SDK region variables. Runtime AWS credentials must come from Amplify’s IAM role/default credential chain, never browser variables.
 - Optional public configuration with local fallback: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` and `NEXT_PUBLIC_MEDIA_BASE_URL`.
+- Production-only analytics configuration: `NEXT_PUBLIC_GA_MEASUREMENT_ID`. The Amplify writer exposes it and a generated enable flag only for a non-PR `main` build with Amplify app context; local builds, tests, previews and non-production branches remain analytics-free. Rebuild production after changing the ID.
 - `NEXT_PUBLIC_SITE_URL` may remain unset because the application defaults to the canonical `https://cheesewiththat.com` origin.
 - Training, consulting, career and speaking are email-only enquiries and have no Calendly variables or event mapping.
 
@@ -143,7 +144,7 @@ Create a production-quality first release of cheesewiththat.com: an editorial, r
 
 - Phase 1 uses curated sample and placeholder content. Demonstration case studies are labelled and contain no customer names, confidential details, or fabricated metrics.
 - Photography uses repository-owned abstract placeholder artwork until Mihir supplies approved photographs.
-- Booking, payment, fulfilment, transactional email, newsletter, analytics, CMS, and secure CV delivery remain adapters or documented extension points. No transaction is simulated.
+- Booking, payment, fulfilment, transactional email, newsletter, CMS, and secure CV delivery remain adapters or documented extension points. GA4 uses the official conditional root integration; analytics consent controls remain a documented follow-up. No transaction is simulated.
 - Enquiry forms use the validated server route and SES adapter. They show success only after provider confirmation and retain honest retry states when delivery is unavailable; durable consent records remain deferred.
 - The map is a lightweight, non-geographic editorial prototype with approximate sample coordinates. No current or private location is represented.
 - Local MDX support is represented by a typed article content layer and a sample article. Full MDX compilation is deferred until editorial workflow requirements are confirmed, avoiding an unnecessary runtime dependency now.

@@ -13,6 +13,9 @@ export type ExternalProfile = {
   href?: string;
   configured: boolean;
 };
+export type CvRequestContent = {
+  supportingCopy: string;
+};
 export type Expertise = { title: string; description: string };
 export type WorkItem = {
   slug: string;
