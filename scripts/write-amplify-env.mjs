@@ -1,7 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const productionBranch = "main";
 const serverVariables = [
   "FORM_NOTIFICATION_TO_EMAIL",
   "FORM_NOTIFICATION_FROM_EMAIL",
@@ -19,12 +18,8 @@ const publicVariables = [
   "NEXT_PUBLIC_CALENDLY_FALLBACK_URL",
 ];
 
-export function isAmplifyProductionBuild(environment) {
-  return Boolean(
-    environment.AWS_APP_ID?.trim() &&
-    environment.AWS_BRANCH === productionBranch &&
-    !environment.AWS_PULL_REQUEST_ID?.trim(),
-  );
+export function isAmplifyPullRequestPreview(environment) {
+  return Boolean(environment.AWS_PULL_REQUEST_ID?.trim());
 }
 
 export function prepareAmplifyEnvironment(environment) {
@@ -40,14 +35,9 @@ export function prepareAmplifyEnvironment(environment) {
     );
   }
 
-  const analyticsEnabled = isAmplifyProductionBuild(environment);
+  const isPullRequestPreview = isAmplifyPullRequestPreview(environment);
   const measurementId = environment.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
-  if (analyticsEnabled && !measurementId) {
-    throw new Error(
-      "NEXT_PUBLIC_GA_MEASUREMENT_ID is required for the production Amplify branch.",
-    );
-  }
-
+  const analyticsConfigured = Boolean(!isPullRequestPreview && measurementId);
   const configuredVariables = [...serverVariables, ...publicVariables].filter(
     (name) => environment[name] !== undefined,
   );
@@ -55,18 +45,19 @@ export function prepareAmplifyEnvironment(environment) {
     (name) => `${name}=${sanitizeEnvironmentValue(environment[name])}`,
   );
 
-  if (analyticsEnabled) {
-    configuredVariables.push(
-      "NEXT_PUBLIC_GA_MEASUREMENT_ID",
-      "NEXT_PUBLIC_GA_ENABLED",
-    );
+  if (analyticsConfigured) {
+    configuredVariables.push("NEXT_PUBLIC_GA_MEASUREMENT_ID");
     lines.push(
       `NEXT_PUBLIC_GA_MEASUREMENT_ID=${sanitizeEnvironmentValue(measurementId)}`,
-      "NEXT_PUBLIC_GA_ENABLED=true",
     );
   }
 
-  return { analyticsEnabled, configuredVariables, lines };
+  return {
+    analyticsConfigured,
+    configuredVariables,
+    isPullRequestPreview,
+    lines,
+  };
 }
 
 function sanitizeEnvironmentValue(value) {
@@ -80,7 +71,7 @@ function writeAmplifyEnvironment() {
     mode: 0o600,
   });
   console.info(
-    `Prepared .env.production with ${prepared.configuredVariables.length} allow-listed variables; production analytics ${prepared.analyticsEnabled ? "enabled" : "disabled"}.`,
+    `Prepared .env.production with ${prepared.configuredVariables.length} allow-listed variables; analytics ${prepared.analyticsConfigured ? "configured" : "disabled"}${prepared.isPullRequestPreview ? " for pull-request preview" : ""}.`,
   );
 }
 

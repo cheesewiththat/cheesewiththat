@@ -8,9 +8,9 @@ Location data remains typed and approximate. Import preparation lives at `docs/t
 
 ## Google Analytics 4
 
-Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` in Amplify for the production app. The build helper writes the ID plus an internal public enable flag only when Amplify supplies an app ID, identifies the branch as `main`, and supplies no pull-request ID. It strips analytics from local builds, tests, pull-request previews and every non-production branch even if the measurement ID is inherited there. Do not configure the generated `NEXT_PUBLIC_GA_ENABLED` flag manually.
+Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` in Amplify for production. `SiteAnalytics` renders the official `@next/third-parties` Google Analytics component once in the root layout only when that ID is present and Next.js is running in production mode. Leave the variable blank in local development and tests.
 
-`SiteAnalytics` renders the official `@next/third-parties` Google Analytics component once in the root layout only when both production values were generated and the browser hostname is exactly `cheesewiththat.com` or `www.cheesewiththat.com`. The hostname check is a second guard against preview or local tracking. GA Enhanced Measurement must have browser-history page-view tracking enabled so App Router client navigation is measured without duplicate manual page-view events.
+Amplify pull-request previews expose `AWS_PULL_REQUEST_ID`. The environment writer omits the ID for that context, and `amplify.yml` also unsets any inherited `NEXT_PUBLIC_GA_MEASUREMENT_ID` for the preview build command. This prevents the public value from being embedded by Next.js in preview output. No separate deployment-environment variable or generated analytics enable flag is required. GA Enhanced Measurement must have browser-history page-view tracking enabled so App Router client navigation is measured without duplicate manual page-view events.
 
 The typed client helper in `src/lib/analytics.ts` emits only allow-listed, non-sensitive parameters for successful enquiries, CV requests, Calendly scheduling actions, external links and map interactions. Analytics being absent, blocked or failing never interrupts those actions. No cookie-consent manager currently exists; review consent and privacy treatment before broader campaigns or audience activation.
 

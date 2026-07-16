@@ -7,7 +7,7 @@ frontend:
     build:
       commands:
         - node scripts/write-amplify-env.mjs
-        - npm run build
+        - 'if [ -n "${AWS_PULL_REQUEST_ID:-}" ]; then env -u NEXT_PUBLIC_GA_MEASUREMENT_ID npm run build; else npm run build; fi'
   artifacts:
     baseDirectory: .next
     files:

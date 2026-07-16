@@ -13,7 +13,7 @@ afterEach(() => {
 
 function enableProductionAnalytics() {
   vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-1G3R8K61VF");
-  vi.stubEnv("NEXT_PUBLIC_GA_ENABLED", "true");
+  vi.stubEnv("NODE_ENV", "production");
 }
 
 describe("analytics events", () => {
@@ -21,21 +21,21 @@ describe("analytics events", () => {
     enableProductionAnalytics();
     vi.stubGlobal("window", {
       location: {
-        hostname: "cheesewiththat.com",
         pathname: "/engage/cv",
       },
     });
     expect(() => trackEvent("cv_request_submitted")).not.toThrow();
   });
 
-  it.each(["localhost", "pr-7.example.amplifyapp.com"])(
-    "does not emit events on non-production host %s",
-    (hostname) => {
-      enableProductionAnalytics();
+  it.each(["development", "test"])(
+    "does not emit events in %s mode",
+    (nodeEnv) => {
+      vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-1G3R8K61VF");
+      vi.stubEnv("NODE_ENV", nodeEnv);
       const gtag = vi.fn();
       vi.stubGlobal("window", {
         gtag,
-        location: { hostname, pathname: "/map" },
+        location: { pathname: "/map" },
       });
       trackEvent("map_location_selected", {
         location_name: "Nagpur",
@@ -50,7 +50,7 @@ describe("analytics events", () => {
     const gtag = vi.fn();
     vi.stubGlobal("window", {
       gtag,
-      location: { hostname: "cheesewiththat.com", pathname: "/mihir" },
+      location: { pathname: "/mihir" },
     });
     const parameters = {
       link_label: "LinkedIn",
@@ -73,7 +73,7 @@ describe("analytics events", () => {
     const gtag = vi.fn();
     vi.stubGlobal("window", {
       gtag,
-      location: { hostname: "cheesewiththat.com", pathname: "/map" },
+      location: { pathname: "/map" },
     });
 
     trackEvent("map_location_selected", {
@@ -94,7 +94,7 @@ describe("analytics events", () => {
       gtag: () => {
         throw new Error("blocked");
       },
-      location: { hostname: "cheesewiththat.com", pathname: "/map" },
+      location: { pathname: "/map" },
     });
     expect(() =>
       trackEvent("map_filter_changed", {
