@@ -1,50 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { getProductionAnalyticsId } from "@/lib/analytics-config";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import { SiteAnalytics } from "./SiteAnalytics";
 
 describe("production analytics configuration", () => {
-  it.each(["cheesewiththat.com", "www.cheesewiththat.com"])(
-    "allows the production host %s when the build gate is enabled",
-    (hostname) => {
-      expect(
-        getProductionAnalyticsId({
-          measurementId: " G-1G3R8K61VF ",
-          enabled: true,
-          hostname,
-        }),
-      ).toBe("G-1G3R8K61VF");
-    },
-  );
-
-  it.each([
-    "localhost",
-    "127.0.0.1",
-    "main.example.amplifyapp.com",
-    "pr-7.example.amplifyapp.com",
-    "preview.cheesewiththat.com",
-  ])("rejects non-production host %s", (hostname) => {
+  it("renders the official integration in production when the ID exists", () => {
     expect(
-      getProductionAnalyticsId({
-        measurementId: "G-1G3R8K61VF",
-        enabled: true,
-        hostname,
+      SiteAnalytics({
+        measurementId: " G-1G3R8K61VF ",
+        nodeEnv: "production",
       }),
-    ).toBeUndefined();
+    ).toMatchObject({
+      type: GoogleAnalytics,
+      props: { gaId: "G-1G3R8K61VF" },
+    });
   });
 
-  it("rejects a missing ID or disabled build gate", () => {
+  it.each(["development", "test"])("renders nothing in %s mode", (nodeEnv) => {
     expect(
-      getProductionAnalyticsId({
-        measurementId: undefined,
-        enabled: true,
-        hostname: "cheesewiththat.com",
-      }),
-    ).toBeUndefined();
+      SiteAnalytics({ measurementId: "G-1G3R8K61VF", nodeEnv }),
+    ).toBeNull();
+  });
+
+  it("renders nothing in production when the ID is absent", () => {
     expect(
-      getProductionAnalyticsId({
-        measurementId: "G-1G3R8K61VF",
-        enabled: false,
-        hostname: "cheesewiththat.com",
-      }),
-    ).toBeUndefined();
+      SiteAnalytics({ measurementId: undefined, nodeEnv: "production" }),
+    ).toBeNull();
+    expect(
+      SiteAnalytics({ measurementId: "  ", nodeEnv: "production" }),
+    ).toBeNull();
   });
 });

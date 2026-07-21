@@ -26,7 +26,7 @@ Set this public variable in Amplify:
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-1G3R8K61VF
 ```
 
-The value is embedded only when Amplify identifies the build as the `main` production branch and no pull-request ID is present. `scripts/write-amplify-env.mjs` deliberately omits both the ID and its generated enable flag from pull-request previews, preview branches, non-production branches, tests and local production builds. Never configure `NEXT_PUBLIC_GA_ENABLED` manually. Adding or changing the measurement ID requires a new production build and deployment. Confirm GA Enhanced Measurement includes page changes based on browser history events. No consent manager currently gates production analytics, so review consent and privacy treatment before broader campaigns.
+The application loads GA only when this value is configured and Next.js is running in production mode. Amplify identifies pull-request previews with `AWS_PULL_REQUEST_ID`; `scripts/write-amplify-env.mjs` omits the ID in that context and `amplify.yml` unsets any inherited value for the preview build command. Leave the ID blank in local development and tests. No separate deployment-environment variable or generated enable flag is required. Adding or changing the measurement ID requires a new production build and deployment. Confirm GA Enhanced Measurement includes page changes based on browser history events. No consent manager currently gates production analytics, so review consent and privacy treatment before broader campaigns.
 
 Amplify pull-request previews must remain analytics-free. When web previews are enabled for `main`, opening the PR triggers a unique preview deployment; verify its HTML contains no `googletagmanager.com` request before merge.
 
