@@ -24,8 +24,9 @@ export default function Engage() {
         <div className="mx-auto max-w-page">
           <h2 className="font-serif text-5xl">Working sessions</h2>
           <p className="text-cream/60 mt-3 text-sm">
-            Prepare the context, review it, then book the matching session in
-            Calendly. No separate website email is sent for these sessions.
+            Bring the challenge, idea or opportunity you want to work through.
+            Choose the session that best fits, share a little context, and we’ll
+            use the time to create clarity, direction and practical next steps.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {engagements.map((e, index) => (
